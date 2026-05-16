@@ -1,0 +1,26 @@
+# Ignore works1.0-cleaned_with_vhour folder
+env/custom_env/works1.0-cleaned_with_vhour/
+
+# Ignore data and img folders in logs/test
+logs/test/data/
+logs/test/img/
+logs/test/alinea/
+
+
+# Python specific
+__pycache__/
+
+
+# Distribution / packaging
+*.egg-info/
+
+# Byte-compiled / optimized / DLL files
+*.pyc
+*.pyo
+*.pyd
+
+.venv
+.mypy_cache/
+.pytest_cache/
+.codex/
+.agents

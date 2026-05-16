@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-09-01 20:31:18 by Eclipse SUMO GUI Version 1.18.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="env/custom_env/data/1ramp_1x3/1ramp_1x3.net.xml"/>
+        <route-files value="env/custom_env/data/1ramp_1x3/1ramp_1x3.rou.xml"/>
+        <additional-files value="env/custom_env/data/1ramp_1x3/1ramp_1x3.add.xml"/>
+    </input>
+
+    <output>
+        <tripinfo-output value="env/custom_env/data/1ramp_1x3/tripinfo.xml"/>
+    </output>
+
+    <time>
+        <begin value="0"/>
+    </time>
+
+    <processing>
+        <time-to-teleport value="300"/>
+        <waiting-time-memory value="1000"/>
+    </processing>
+
+    <routing>
+        <device.rerouting.probability value="0"/>
+    </routing>
+
+    <report>
+        <verbose value="true"/>
+        <no-warnings value="true"/>
+        <duration-log.statistics value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+    <emissions>
+        <device.emissions.probability value="1.0"/>
+    </emissions>
+
+    <traci_server>
+        <remote-port value="50623"/>
+    </traci_server>
+
+    <gui_only>
+        <gui-settings-file value="env/custom_env/data/1ramp_1x3/gui-settings.cfg"/>
+        <quit-on-end value="true"/>
+        <start value="true"/>
+        <delay value="0"/>
+    </gui_only>
+
+</configuration>
+-->
+
+<detector xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/det_e1_file.xsd">
+    <interval begin="0.00" end="40.00" id="passage_queue_sens" nVehContrib="13" flow="1170.00" occupancy="12.83" speed="13.11" harmonicMeanSpeed="12.95" length="5.00" nVehEntered="14"/>
+    <interval begin="40.00" end="80.00" id="passage_queue_sens" nVehContrib="15" flow="1350.00" occupancy="17.53" speed="10.75" harmonicMeanSpeed="10.53" length="5.00" nVehEntered="14"/>
+    <interval begin="80.00" end="120.00" id="passage_queue_sens" nVehContrib="11" flow="990.00" occupancy="13.30" speed="10.64" harmonicMeanSpeed="10.34" length="5.00" nVehEntered="11"/>
+    <interval begin="120.00" end="160.00" id="passage_queue_sens" nVehContrib="13" flow="1170.00" occupancy="14.79" speed="11.49" harmonicMeanSpeed="10.99" length="5.00" nVehEntered="13"/>
+    <interval begin="160.00" end="200.00" id="passage_queue_sens" nVehContrib="14" flow="1260.00" occupancy="16.80" speed="10.79" harmonicMeanSpeed="10.42" length="5.00" nVehEntered="14"/>
+    <interval begin="200.00" end="240.00" id="passage_queue_sens" nVehContrib="10" flow="900.00" occupancy="11.77" speed="11.00" harmonicMeanSpeed="10.62" length="5.00" nVehEntered="10"/>
+    <interval begin="240.00" end="280.00" id="passage_queue_sens" nVehContrib="6" flow="540.00" occupancy="8.64" speed="9.08" harmonicMeanSpeed="8.68" length="5.00" nVehEntered="6"/>
+    <interval begin="280.00" end="320.00" id="passage_queue_sens" nVehContrib="10" flow="900.00" occupancy="12.03" speed="10.94" harmonicMeanSpeed="10.39" length="5.00" nVehEntered="10"/>
+    <interval begin="320.00" end="360.00" id="passage_queue_sens" nVehContrib="10" flow="900.00" occupancy="12.84" speed="10.27" harmonicMeanSpeed="9.74" length="5.00" nVehEntered="10"/>
+    <interval begin="360.00" end="400.00" id="passage_queue_sens" nVehContrib="13" flow="1170.00" occupancy="16.14" speed="10.29" harmonicMeanSpeed="10.07" length="5.00" nVehEntered="13"/>
+    <interval begin="400.00" end="440.00" id="passage_queue_sens" nVehContrib="10" flow="900.00" occupancy="13.69" speed="9.58" harmonicMeanSpeed="9.13" length="5.00" nVehEntered="10"/>
+    <interval begin="440.00" end="480.00" id="passage_queue_sens" nVehContrib="11" flow="990.00" occupancy="13.73" speed="10.52" harmonicMeanSpeed="10.02" length="5.00" nVehEntered="11"/>
+    <interval begin="480.00" end="520.00" id="passage_queue_sens" nVehContrib="10" flow="900.00" occupancy="12.85" speed="10.19" harmonicMeanSpeed="9.73" length="5.00" nVehEntered="10"/>
+    <interval begin="520.00" end="560.00" id="passage_queue_sens" nVehContrib="10" flow="900.00" occupancy="11.76" speed="11.05" harmonicMeanSpeed="10.62" length="5.00" nVehEntered="10"/>
+    <interval begin="560.00" end="600.00" id="passage_queue_sens" nVehContrib="11" flow="990.00" occupancy="14.65" speed="9.76" harmonicMeanSpeed="9.38" length="5.00" nVehEntered="11"/>
+    <interval begin="600.00" end="640.00" id="passage_queue_sens" nVehContrib="16" flow="1440.00" occupancy="18.56" speed="11.06" harmonicMeanSpeed="10.77" length="5.00" nVehEntered="16"/>
+    <interval begin="640.00" end="680.00" id="passage_queue_sens" nVehContrib="7" flow="630.00" occupancy="9.67" speed="9.37" harmonicMeanSpeed="9.05" length="5.00" nVehEntered="7"/>
+    <interval begin="680.00" end="720.00" id="passage_queue_sens" nVehContrib="10" flow="900.00" occupancy="12.39" speed="10.62" harmonicMeanSpeed="10.09" length="5.00" nVehEntered="10"/>
+    <interval begin="720.00" end="760.00" id="passage_queue_sens" nVehContrib="10" flow="900.00" occupancy="12.15" speed="10.79" harmonicMeanSpeed="10.29" length="5.00" nVehEntered="10"/>
+    <interval begin="760.00" end="779.00" id="passage_queue_sens" nVehContrib="4" flow="757.89" occupancy="12.62" speed="8.53" harmonicMeanSpeed="8.34" length="5.00" nVehEntered="4"/>
+</detector>

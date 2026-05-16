@@ -1,0 +1,36 @@
+[project]
+name = "youcef-drl-rmc-pfe-2025"
+version = "0.1.0"
+description = "DQN-based ramp metering control for a SUMO highway corridor."
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+dependencies = [
+    # Core runtime dependencies translated from bin/environment.yml.
+    "cloudpickle==2.2.1",
+    "colorama==0.4.6",
+    "gymnasium==0.28.1",
+    "msgpack==1.0.2",
+    "numpy==1.21.6",
+    "pandas==1.3.5",
+    "tensorboard==2.11.2",
+    "torch==1.13.1",
+    "tqdm==4.64.1",
+
+    # Keep these aligned with the installed SUMO binary.
+    # The current machine has SUMO 1.26.0; use 1.21.0 instead if you run
+    # against the exact old Conda environment from bin/environment.yml.
+    "sumolib==1.26.0",
+    "traci==1.26.0",
+]
+
+[project.optional-dependencies]
+analysis = [
+    "ipykernel==6.16.2",
+    "matplotlib==3.5.3",
+    "plotly==5.18.0",
+    "scipy==1.7.3",
+    "seaborn==0.12.2",
+]
+
+[tool.uv]
+package = false

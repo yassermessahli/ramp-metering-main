@@ -1,0 +1,38 @@
+"""Metaclass helper for abstract attributes."""
+# https://stackoverflow.com/questions/23831510/abstract-attribute-not-property
+from abc import ABCMeta as NativeABCMeta
+
+
+class DummyAttribute:
+    """Placeholder for abstract attributes."""
+    pass
+
+
+def abstract_attribute(obj=None):
+    """Decorator to mark an attribute as abstract."""
+    if obj is None:
+        obj = DummyAttribute()
+    obj.__is_abstract_attribute__ = True
+    return obj
+
+
+    """Metaclass that enforces abstract attributes."""
+
+    def __call__(cls, *args, **kwargs):
+        """Instantiates class and checks for missing abstract attributes."""
+    def __call__(cls, *args, **kwargs):
+        instance = NativeABCMeta.__call__(cls, *args, **kwargs)
+        abstract_attributes = {
+            name
+            for name in dir(instance)
+            if getattr(getattr(instance, name), '__is_abstract_attribute__', False)
+        }
+        if abstract_attributes:
+            raise NotImplementedError(
+                "Can't instantiate abstract class {} with"
+                " abstract attributes: {}".format(
+                    cls.__name__,
+                    ', '.join(abstract_attributes)
+                )
+            )
+        return instance

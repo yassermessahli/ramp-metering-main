@@ -194,8 +194,8 @@ class Agent(metaclass=ABCMeta):
             self.update_target_network(force=True)
             self.step = self.resume_step
 
-    def save_model(self):
-        if self.step % self.save_frequency == 0 and self.step > self.resume_step:
+    def save_model(self, force=False):
+        if force or (self.step % self.save_frequency == 0 and self.step > self.resume_step):
             print()
             print("Saving model...")
             self.online_network.save(

@@ -56,7 +56,7 @@ class BaselineMeta(SumoEnv):
         raise NotImplementedError
 
     def obs(self):
-        return []
+        return np.zeros((self.observation_space_n,), dtype=np.float32)
 
     def rew(self):
         return 0

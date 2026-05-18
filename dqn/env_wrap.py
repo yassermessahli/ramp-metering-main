@@ -44,14 +44,14 @@ class CustomEnvWrapper(gym.Env):
     def _obs(self):
         """Formats observation for the agent."""
         obs = self.custom_env.obs()
+        obs_arr = np.asarray(obs, dtype=np.float32)
+        expected_shape = self.observation_space.shape
 
-        if isinstance(obs, np.ndarray):
-            if obs.dtype == np.float32:
-                return obs
-            else:
-                return obs.astype("float32")
-        else:
-            return np.array(obs, dtype=np.float32)
+        if obs_arr.shape != expected_shape:
+            expected_size = int(np.prod(expected_shape)) if expected_shape else 1
+            if obs_arr.size == expected_size:
+                obs_arr = obs_arr.reshape(expected_shape)
+        return obs_arr
 
     def _rew(self):
         """Accumulates and returns reward."""
@@ -139,6 +139,9 @@ class CustomEnvWrapper(gym.Env):
 
             if done:
                 # The log_path from evaluate.py already has the full name, no need to add .csv
+                log_dir = os.path.dirname(log_path)
+                if log_dir:
+                    os.makedirs(log_dir, exist_ok=True)
                 file_exists = os.path.isfile(log_path)
 
                 with open(

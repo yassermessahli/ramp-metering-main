@@ -1,7 +1,0 @@
-# Ignore works1.0-cleaned_with_vhour folder
-env/custom_env/works1.0-cleaned_with_vhour/
-
-# Ignore data and img folders in logs/test
-logs/test/data/
-logs/test/img/
-logs/test/alinea/

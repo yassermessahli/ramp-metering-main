@@ -5,11 +5,28 @@ import numpy as np
 from .vec_env import CloudpickleWrapper, VecEnv, clear_mpi_env_vars
 
 
+def _unpack_reset(reset_result):
+    if isinstance(reset_result, tuple) and len(reset_result) == 2:
+        return reset_result[0]
+    return reset_result
+
+
+def _unpack_step(step_result):
+    if isinstance(step_result, tuple) and len(step_result) == 5:
+        ob, reward, terminated, truncated, info = step_result
+        done = terminated or truncated
+        if truncated:
+            info = dict(info)
+            info["TimeLimit.truncated"] = True
+        return ob, reward, done, info
+    return step_result
+
+
 def worker(remote, parent_remote, env_fn_wrappers):
     def step_env(env, action):
-        ob, reward, done, info = env.step(action)
+        ob, reward, done, info = _unpack_step(env.step(action))
         if done:
-            ob = env.reset()
+            ob = _unpack_reset(env.reset())
         return ob, reward, done, info
 
     parent_remote.close()
@@ -20,7 +37,7 @@ def worker(remote, parent_remote, env_fn_wrappers):
             if cmd == 'step':
                 remote.send([step_env(env, action) for env, action in zip(envs, data)])
             elif cmd == 'reset':
-                remote.send([env.reset() for env in envs])
+                remote.send([_unpack_reset(env.reset()) for env in envs])
             elif cmd == 'render':
                 remote.send([env.render(mode='human') for env in envs])
             elif cmd == 'close':

@@ -16,23 +16,23 @@ def abstract_attribute(obj=None):
     return obj
 
 
+class ABCMeta(NativeABCMeta):
     """Metaclass that enforces abstract attributes."""
 
     def __call__(cls, *args, **kwargs):
         """Instantiates class and checks for missing abstract attributes."""
-    def __call__(cls, *args, **kwargs):
         instance = NativeABCMeta.__call__(cls, *args, **kwargs)
         abstract_attributes = {
             name
             for name in dir(instance)
-            if getattr(getattr(instance, name), '__is_abstract_attribute__', False)
+            if getattr(getattr(instance, name), "__is_abstract_attribute__", False)
         }
         if abstract_attributes:
             raise NotImplementedError(
                 "Can't instantiate abstract class {} with"
                 " abstract attributes: {}".format(
                     cls.__name__,
-                    ', '.join(abstract_attributes)
+                    ", ".join(abstract_attributes),
                 )
             )
         return instance

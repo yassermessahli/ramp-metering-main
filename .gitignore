@@ -6,6 +6,11 @@ logs/test/data/
 logs/test/img/
 logs/test/alinea/
 
+# SUMO outputs
+env/custom_env/data/1ramp_1x3/induction_loop_data/
+env/custom_env/
+logs/
+
 
 # Python specific
 __pycache__/
@@ -24,3 +29,4 @@ __pycache__/
 .pytest_cache/
 .codex/
 .agents
+tripinfo_runs/

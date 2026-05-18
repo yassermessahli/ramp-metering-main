@@ -129,7 +129,8 @@ class Train:
             self.agent.save_model()
 
             if bool(self.max_total_steps) and (step * self.agent.n_env) >= self.max_total_steps:
-                exit()
+                self.agent.save_model(force=True)
+                return
 
     def run(self):
         """Starts the training process."""

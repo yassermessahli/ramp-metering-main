@@ -2,7 +2,7 @@
 
 function run () {
 
-python3 train.py -algo DuelingDoubleDQNAgent -max_total_steps 2000000
+uv run train.py -algo DuelingDoubleDQNAgent -load False -max_total_steps 1000 -min_mem 100 
 
 }
 

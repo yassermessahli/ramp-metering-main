@@ -1,6 +1,17 @@
 import gymnasium as gym
 
 
+def _unpack_step(step_result):
+    if isinstance(step_result, tuple) and len(step_result) == 5:
+        obs, reward, terminated, truncated, info = step_result
+        done = terminated or truncated
+        if truncated:
+            info = dict(info)
+            info["TimeLimit.truncated"] = True
+        return obs, reward, done, info
+    return step_result
+
+
 class RepeatActionWrapper(gym.Wrapper):
     def __init__(self, env, repeat=4):
         """Return only every `repeat`-th frame"""
@@ -12,7 +23,7 @@ class RepeatActionWrapper(gym.Wrapper):
         total_reward = 0.0
         done = False
         for i in range(self._repeat):
-            obs, reward, done, info = self.env.step(action)
+            obs, reward, done, info = _unpack_step(self.env.step(action))
             total_reward += reward
             if done:
                 break
@@ -30,7 +41,7 @@ class MaxEpisodeStepsWrapper(gym.Wrapper):
         self._elapsed_steps = 0
 
     def step(self, ac):
-        observation, reward, done, info = self.env.step(ac)
+        observation, reward, done, info = _unpack_step(self.env.step(ac))
         self._elapsed_steps += 1
         if self._elapsed_steps >= self._max_episode_steps:
             done = True

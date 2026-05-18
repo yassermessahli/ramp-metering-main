@@ -9,7 +9,7 @@ ALGO4="PiAlineaDsBaseline"
 
 
 
-python3 play.py -player $ALGO2 -max_e 1 -log True -log_s 40
+uv run play.py -player FixedCycleBaseline -max_e 1 -log True -log_s 40
 
 }
 

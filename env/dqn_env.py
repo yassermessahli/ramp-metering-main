@@ -13,24 +13,33 @@ class DqnEnv:
             self.min_max[feature][1] - self.min_max[feature][0]
         )
 
-    def __init__(self, m, p=None):
-        """Initializes environment mode and controller."""
+    def __init__(self, m, p=None, gui_override=None):
+        """Initializes environment mode and controller.
+
+        Args:
+            m: Mode (train, observe, or play)
+            p: Player strategy name (for play mode)
+            gui_override: Optional GUI setting to override SUMO_PARAMS["gui"]
+        """
         self.mode = {"train": False, "observe": False, "play": False, m: True}
         self.player = p if self.mode["play"] else None
+
+        # Determine GUI setting, prioritizing override
+        gui_setting = gui_override if gui_override is not None else SUMO_PARAMS["gui"]
 
         # """CHANGE ENV CONSTRUCT HERE""" ##############################################################################
         if self.mode["train"]:
             self.sumo_env = RLController(gui=False, log=False, rnd=(False, False))
         elif self.mode["observe"]:
-            self.sumo_env = RLController(gui=SUMO_PARAMS["gui"], log=True, rnd=SUMO_PARAMS["rnd"])
+            self.sumo_env = RLController(gui=gui_setting, log=True, rnd=SUMO_PARAMS["rnd"])
         elif self.mode["play"]:
             if p == "Test":
                 self.sumo_env = RLController(
-                    gui=SUMO_PARAMS["gui"], log=SUMO_PARAMS["log"], rnd=SUMO_PARAMS["rnd"]
+                    gui=gui_setting, log=SUMO_PARAMS["log"], rnd=SUMO_PARAMS["rnd"]
                 )
             else:
                 self.sumo_env = getattr(Baselines, p)(
-                    gui=SUMO_PARAMS["gui"], log=SUMO_PARAMS["log"], rnd=SUMO_PARAMS["rnd"]
+                    gui=gui_setting, log=SUMO_PARAMS["log"], rnd=SUMO_PARAMS["rnd"]
                 )
         ################################################################################################################
 

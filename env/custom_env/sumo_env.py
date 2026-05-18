@@ -2,6 +2,9 @@ import json
 import os
 import random
 import sys
+import threading
+import time
+import subprocess
 
 import numpy as np
 from colorama import Fore
@@ -109,13 +112,21 @@ class SumoEnv:
         emission_xml_path = os.path.join(os.path.dirname(self.data_dir), "emissions.xml")
         sumo_seed = os.environ.get("SUMO_EVAL_SEED")
         sumo_log_file = os.environ.get("SUMO_EVAL_LOG_FILE")
+        sumo_tripinfo_file = os.environ.get("SUMO_TRIPINFO_FILE")
+
+        tripinfo_output = self.data_dir + "tripinfo.xml"
+        if sumo_tripinfo_file:
+            tripinfo_output = sumo_tripinfo_file
+            tripinfo_dir = os.path.dirname(tripinfo_output)
+            if tripinfo_dir:
+                os.makedirs(tripinfo_dir, exist_ok=True)
 
         params = [
             "sumo-gui" if self.gui else "sumo",
             "-c",
             sumocfg_path,
             "--tripinfo-output",
-            self.data_dir + "tripinfo.xml",
+            tripinfo_output,
             "--device.emissions.probability",
             "1.0",
             "--time-to-teleport",
@@ -272,11 +283,31 @@ class SumoEnv:
             print(f"Error starting TraCI during explicit start(): {e}")
             sys.exit(1)
 
-    def stop(self):
-        try:
-            traci.close()
-        except traci.TraCIException:
-            pass
+    def stop(self, timeout=5.0):
+        """Closes the TraCI connection with a timeout to prevent hanging.
+
+        Args:
+            timeout: Maximum time in seconds to wait for traci.close() to complete
+        """
+
+        def close_traci():
+            try:
+                traci.close()
+            except (traci.TraCIException, Exception):
+                pass
+
+        # Try to close TraCI with a timeout
+        close_thread = threading.Thread(target=close_traci, daemon=True)
+        close_thread.start()
+        close_thread.join(timeout=timeout)
+
+        # If thread is still alive after timeout, force kill SUMO processes
+        if close_thread.is_alive():
+            try:
+                subprocess.run(["pkill", "-9", "-f", "sumo"], timeout=1)
+            except Exception:
+                pass
+
         sys.stdout.flush()
 
     def close(self):

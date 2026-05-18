@@ -10,11 +10,16 @@ class Play(View):
 
     def __init__(self, args):
         """Initializes playback environment."""
+        # Determine GUI override from args if present
+        gui_override = None
+        if hasattr(args, "headless") and args.headless:
+            gui_override = False
+
         super().__init__(
             type(self).__name__.upper(),
             make_env(
                 env=CustomEnvWrapper(
-                    CustomEnv(type(self).__name__.lower(), p=args.player)
+                    CustomEnv(type(self).__name__.lower(), p=args.player, gui_override=gui_override)
                 ),
                 max_episode_steps=args.max_s,
             ),
@@ -77,18 +82,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "-max_s", type=int, default=0, help="Max steps per episode if > 0, else inf"
     )
-    parser.add_argument(
-        "-max_e", type=int, default=0, help="Max episodes if > 0, else inf"
-    )
-    parser.add_argument(
-        "-log", type=str2bool, default=False, help="Log csv to ./logs/test/"
-    )
-    parser.add_argument(
-        "-log_s", type=int, default=0, help="Log step if > 0, else episode"
-    )
-    parser.add_argument(
-        "-log_dir", type=str, default="./logs/test/", help="Log directory"
-    )
+    parser.add_argument("-max_e", type=int, default=0, help="Max episodes if > 0, else inf")
+    parser.add_argument("-log", type=str2bool, default=False, help="Log csv to ./logs/test/")
+    parser.add_argument("-log_s", type=int, default=0, help="Log step if > 0, else episode")
+    parser.add_argument("-log_dir", type=str, default="./logs/test/", help="Log directory")
     parser.add_argument("-player", type=str, default="player", help="Player")
 
     Play(parser.parse_args()).run()

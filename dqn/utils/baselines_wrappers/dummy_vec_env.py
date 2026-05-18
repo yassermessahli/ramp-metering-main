@@ -4,6 +4,23 @@ from .util import copy_obs_dict, dict_to_obs, obs_space_info
 from .vec_env import VecEnv
 
 
+def _unpack_reset(reset_result):
+    if isinstance(reset_result, tuple) and len(reset_result) == 2:
+        return reset_result[0]
+    return reset_result
+
+
+def _unpack_step(step_result):
+    if isinstance(step_result, tuple) and len(step_result) == 5:
+        obs, rew, terminated, truncated, info = step_result
+        done = terminated or truncated
+        if truncated:
+            info = dict(info)
+            info["TimeLimit.truncated"] = True
+        return obs, rew, done, info
+    return step_result
+
+
 class DummyVecEnv(VecEnv):
     """
     VecEnv that does runs multiple environments sequentially, that is,
@@ -50,16 +67,18 @@ class DummyVecEnv(VecEnv):
             # if isinstance(self.envs[e].action_space, spaces.Discrete):
             #    action = int(action)
 
-            obs, self.buf_rews[e], self.buf_dones[e], self.buf_infos[e] = self.envs[e].step(action)
+            obs, self.buf_rews[e], self.buf_dones[e], self.buf_infos[e] = _unpack_step(
+                self.envs[e].step(action)
+            )
             if self.buf_dones[e]:
-                obs = self.envs[e].reset()
+                obs = _unpack_reset(self.envs[e].reset())
             self._save_obs(e, obs)
         return (self._obs_from_buf(), np.copy(self.buf_rews), np.copy(self.buf_dones),
                 self.buf_infos.copy())
 
     def reset(self):
         for e in range(self.num_envs):
-            obs = self.envs[e].reset()
+            obs = _unpack_reset(self.envs[e].reset())
             self._save_obs(e, obs)
         return self._obs_from_buf()
 

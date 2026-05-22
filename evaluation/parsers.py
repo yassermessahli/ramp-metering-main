@@ -121,7 +121,9 @@ def parse_sumo_log(log_path):
         r"Vehicles:\s*\n\s*Inserted:\s*(\d+)\s*\(Loaded:\s*(\d+)\)", content
     )
     emergency_stops_match = re.search(r"Emergency Stops:\s*(\d+)", content)
-    demand_inserted = int(inserted_loaded_match.group(1)) if inserted_loaded_match else 0
+    demand_inserted = (
+        int(inserted_loaded_match.group(1)) if inserted_loaded_match else 0
+    )
     demand_loaded = int(inserted_loaded_match.group(2)) if inserted_loaded_match else 0
 
     return {

@@ -1,15 +1,14 @@
-# Ignore works1.0-cleaned_with_vhour folder
-env/custom_env/works1.0-cleaned_with_vhour/
+env/custom_env/data/1ramp_1x3/induction_loop_data
+env/custom_env/data/1ramp_1x3/tripinfo.xml
 
 # Ignore data and img folders in logs/test
-logs/test/data/
-logs/test/img/
-logs/test/alinea/
+logs/test/*
+logs/evaluation/*
+logs/train/*
 
 # SUMO outputs
 env/custom_env/data/1ramp_1x3/induction_loop_data/
 env/custom_env/
-logs/
 
 
 # Python specific
@@ -26,6 +25,8 @@ __pycache__/
 
 .venv
 .mypy_cache/
+.ruff_cache/
+.cursor/
 .pytest_cache/
 .codex/
 .agents

@@ -31,7 +31,9 @@ class Network(nn.Module):
     def save(self, save_path, step, episode_count, rew_mean, len_mean):
         """Serializes network parameters to disk."""
         params_dict = {
-            "parameters": {k: v.detach().cpu().numpy() for k, v in self.state_dict().items()},
+            "parameters": {
+                k: v.detach().cpu().numpy() for k, v in self.state_dict().items()
+            },
             "step": step,
             "episode_count": episode_count,
             "rew_mean": rew_mean,
@@ -51,7 +53,8 @@ class Network(nn.Module):
             params_dict = msgpack.loads(f.read())
 
         parameters = {
-            k: T.as_tensor(v, device=self.device) for k, v in params_dict["parameters"].items()
+            k: T.as_tensor(v, device=self.device)
+            for k, v in params_dict["parameters"].items()
         }
         self.load_state_dict(parameters)
 
@@ -66,7 +69,9 @@ class Network(nn.Module):
 class DeepQNetwork(Network):
     """Standard Deep Q-Network implementation."""
 
-    def __init__(self, device, lr, nn_conf_func, input_dim, output_dim, reduction="mean"):
+    def __init__(
+        self, device, lr, nn_conf_func, input_dim, output_dim, reduction="mean"
+    ):
         """Initializes DQN with linear output layer."""
         super().__init__(device, nn_conf_func, input_dim)
 
@@ -98,14 +103,18 @@ class DeepQNetwork(Network):
 class DuelingDeepQNetwork(Network):
     """Dueling Deep Q-Network implementation."""
 
-    def __init__(self, device, lr, nn_conf_func, input_dim, output_dim, reduction="mean"):
+    def __init__(
+        self, device, lr, nn_conf_func, input_dim, output_dim, reduction="mean"
+    ):
         """Initializes Dueling DQN with value and advantage streams."""
         super().__init__(device, nn_conf_func, input_dim)
 
         self.fc_val = nn.Linear(self.fc_out_dim, 1)
         self.fc_adv = nn.Linear(self.fc_out_dim, output_dim)
         # Aggregation layer: Q(s,a) = V(s) + (A(s,a) - mean(A(s,a)))
-        self.aggregate_layer = lambda val, adv: T.add(val, (adv - adv.mean(dim=1, keepdim=True)))
+        self.aggregate_layer = lambda val, adv: T.add(
+            val, (adv - adv.mean(dim=1, keepdim=True))
+        )
 
         self.optimizer = self.optim_func(self.parameters(), lr=lr)
         self.loss = self.loss_func(reduction=reduction)

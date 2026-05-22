@@ -22,7 +22,7 @@ class RepeatActionWrapper(gym.Wrapper):
         """Repeat action, sum reward over last observations."""
         total_reward = 0.0
         done = False
-        for i in range(self._repeat):
+        for _i in range(self._repeat):
             obs, reward, done, info = _unpack_step(self.env.step(action))
             total_reward += reward
             if done:
@@ -45,7 +45,7 @@ class MaxEpisodeStepsWrapper(gym.Wrapper):
         self._elapsed_steps += 1
         if self._elapsed_steps >= self._max_episode_steps:
             done = True
-            info['TimeLimit.truncated'] = True
+            info["TimeLimit.truncated"] = True
         return observation, reward, done, info
 
     def reset(self, **kwargs):

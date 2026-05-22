@@ -97,9 +97,9 @@ class Agent(metaclass=ABCMeta):
         raise NotImplementedError
 
     def transitions_to_tensor(self, transitions):
-        obses_t = T.as_tensor(np.asarray([t[0] for t in transitions]), dtype=T.float32).to(
-            self.device
-        )
+        obses_t = T.as_tensor(
+            np.asarray([t[0] for t in transitions]), dtype=T.float32
+        ).to(self.device)
         actions_t = (
             T.as_tensor(np.asarray([t[1] for t in transitions]), dtype=T.int64)
             .to(self.device)
@@ -115,9 +115,9 @@ class Agent(metaclass=ABCMeta):
             .to(self.device)
             .unsqueeze(-1)
         )
-        new_obses_t = T.as_tensor(np.asarray([t[4] for t in transitions]), dtype=T.float32).to(
-            self.device
-        )
+        new_obses_t = T.as_tensor(
+            np.asarray([t[4] for t in transitions]), dtype=T.float32
+        ).to(self.device)
 
         return obses_t, actions_t, rews_t, dones_t, new_obses_t
 
@@ -162,19 +162,21 @@ class Agent(metaclass=ABCMeta):
             self.target_network.load_state_dict(self.online_network.state_dict())
         elif self.target_soft_update:
             for target_network_param, online_network_param in zip(
-                self.target_network.parameters(), self.online_network.parameters()
+                self.target_network.parameters(), self.online_network.parameters(), strict=False
             ):
                 target_network_param.data.copy_(
-                    (self.target_soft_update_tau * self.n_env) * online_network_param.data
-                    + (1.0 - (self.target_soft_update_tau * self.n_env)) * target_network_param.data
+                    (self.target_soft_update_tau * self.n_env)
+                    * online_network_param.data
+                    + (1.0 - (self.target_soft_update_tau * self.n_env))
+                    * target_network_param.data
                 )
 
     def load_model(self):
         if self.load and os.path.exists(self.save_path):
             print()
             print("Resume training from " + self.save_path + "...")
-            self.resume_step, self.episode_count, rew_mean, len_mean = self.online_network.load(
-                self.save_path
+            self.resume_step, self.episode_count, rew_mean, len_mean = (
+                self.online_network.load(self.save_path)
             )
             [
                 self.ep_info_buffer.append({"r": rew_mean, "l": len_mean})
@@ -195,7 +197,9 @@ class Agent(metaclass=ABCMeta):
             self.step = self.resume_step
 
     def save_model(self, force=False):
-        if force or (self.step % self.save_frequency == 0 and self.step > self.resume_step):
+        if force or (
+            self.step % self.save_frequency == 0 and self.step > self.resume_step
+        ):
             print()
             print("Saving model...")
             self.online_network.save(
@@ -228,7 +232,9 @@ class Agent(metaclass=ABCMeta):
                 Fore.RESET,
             )
 
-            self.summary_writer.add_scalar("AvgRew", rew_mean, global_step=(self.step * self.n_env))
+            self.summary_writer.add_scalar(
+                "AvgRew", rew_mean, global_step=(self.step * self.n_env)
+            )
             self.summary_writer.add_scalar(
                 "AvgEpLen", len_mean, global_step=(self.step * self.n_env)
             )
@@ -247,7 +253,9 @@ class SimpleAgent(Agent):
 
     def learn(self):
         transitions = self.replay_memory_buffer.sample_transitions()
-        obses_t, actions_t, rews_t, dones_t, new_obses_t = self.transitions_to_tensor(transitions)
+        obses_t, actions_t, rews_t, dones_t, new_obses_t = self.transitions_to_tensor(
+            transitions
+        )
 
         with T.no_grad():
             target_q_values = self.target_network(new_obses_t)
@@ -270,15 +278,21 @@ class DoubleAgent(Agent):
 
     def learn(self):
         transitions = self.replay_memory_buffer.sample_transitions()
-        obses_t, actions_t, rews_t, dones_t, new_obses_t = self.transitions_to_tensor(transitions)
+        obses_t, actions_t, rews_t, dones_t, new_obses_t = self.transitions_to_tensor(
+            transitions
+        )
 
         with T.no_grad():
             targets_online_q_values = self.online_network(new_obses_t)
-            targets_online_best_q_indices = targets_online_q_values.argmax(dim=1, keepdim=True)
+            targets_online_best_q_indices = targets_online_q_values.argmax(
+                dim=1, keepdim=True
+            )
 
             targets_target_q_values = self.target_network(new_obses_t)
             targets_selected_q_values = T.gather(
-                input=targets_target_q_values, dim=1, index=targets_online_best_q_indices
+                input=targets_target_q_values,
+                dim=1,
+                index=targets_online_best_q_indices,
             )
 
             targets = rews_t + (1 - dones_t) * self.gamma * targets_selected_q_values
@@ -298,21 +312,29 @@ class PerDoubleAgent(Agent):
         super().__init__(*args, **kwargs)
 
     def learn(self):
-        is_weights, tree_indices, transitions = self.replay_memory_buffer.sample_transitions(
-            self.step * self.n_env
+        is_weights, tree_indices, transitions = (
+            self.replay_memory_buffer.sample_transitions(self.step * self.n_env)
         )
         is_weights_t = (
-            T.as_tensor(np.asarray(is_weights), dtype=T.float32).to(self.device).unsqueeze(-1)
+            T.as_tensor(np.asarray(is_weights), dtype=T.float32)
+            .to(self.device)
+            .unsqueeze(-1)
         )
-        obses_t, actions_t, rews_t, dones_t, new_obses_t = self.transitions_to_tensor(transitions)
+        obses_t, actions_t, rews_t, dones_t, new_obses_t = self.transitions_to_tensor(
+            transitions
+        )
 
         with T.no_grad():
             targets_online_q_values = self.online_network(new_obses_t)
-            targets_online_best_q_indices = targets_online_q_values.argmax(dim=1, keepdim=True)
+            targets_online_best_q_indices = targets_online_q_values.argmax(
+                dim=1, keepdim=True
+            )
 
             targets_target_q_values = self.target_network(new_obses_t)
             targets_selected_q_values = T.gather(
-                input=targets_target_q_values, dim=1, index=targets_online_best_q_indices
+                input=targets_target_q_values,
+                dim=1,
+                index=targets_online_best_q_indices,
             )
 
             targets = rews_t + (1 - dones_t) * self.gamma * targets_selected_q_values
@@ -322,11 +344,13 @@ class PerDoubleAgent(Agent):
 
         with T.no_grad():
             abs_td_errors_np = T.abs(targets - action_q_values).detach().cpu().numpy()
-            self.replay_memory_buffer.update_batch_priorities(tree_indices, abs_td_errors_np)
+            self.replay_memory_buffer.update_batch_priorities(
+                tree_indices, abs_td_errors_np
+            )
 
-        loss = T.mean(is_weights_t * self.online_network.loss(action_q_values, targets)).to(
-            self.device
-        )
+        loss = T.mean(
+            is_weights_t * self.online_network.loss(action_q_values, targets)
+        ).to(self.device)
 
         self.online_network.optimizer.zero_grad()
         loss.backward()

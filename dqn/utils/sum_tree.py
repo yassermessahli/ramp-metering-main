@@ -3,6 +3,7 @@ import numpy as np
 
 class SumTree:
     """Efficiently stores and retrieves priorities for PER."""
+
     def __init__(self, capacity):
         """Initializes SumTree with given capacity."""
         self.capacity = capacity
@@ -17,7 +18,10 @@ class SumTree:
 
     def update(self, tree_index, priority):
         """Updates priority of a specific leaf and propagates changes."""
-        max_p, min_p = self.tree[self.max_priority_index], self.tree[self.min_priority_index]
+        max_p, min_p = (
+            self.tree[self.max_priority_index],
+            self.tree[self.min_priority_index],
+        )
 
         change = priority - self.tree[tree_index]
         self.tree[tree_index] = priority
@@ -26,11 +30,19 @@ class SumTree:
         if priority >= max_p:
             self.max_priority_index = tree_index
         elif tree_index == self.max_priority_index:
-            self.max_priority_index = np.argmax(self.tree[self.capacity-1:self.capacity+self.size-1]) + self.capacity - 1
+            self.max_priority_index = (
+                np.argmax(self.tree[self.capacity - 1 : self.capacity + self.size - 1])
+                + self.capacity
+                - 1
+            )
         if priority <= min_p:
             self.min_priority_index = tree_index
         elif tree_index == self.min_priority_index:
-            self.min_priority_index = np.argmin(self.tree[self.capacity-1:self.capacity+self.size-1]) + self.capacity - 1
+            self.min_priority_index = (
+                np.argmin(self.tree[self.capacity - 1 : self.capacity + self.size - 1])
+                + self.capacity
+                - 1
+            )
 
         # Propagate change up the tree
         while not tree_index == 0:
@@ -47,7 +59,7 @@ class SumTree:
 
         self.size += 1
         if self.size > self.capacity:
-             self.size = self.capacity
+            self.size = self.capacity
 
         self.update(tree_index, priority)
 
@@ -87,5 +99,3 @@ class SumTree:
     def min_priority(self):
         """Returns minimum priority in the tree."""
         return self.tree[self.min_priority_index]
-
-

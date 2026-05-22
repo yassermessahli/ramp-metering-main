@@ -1,10 +1,12 @@
 """Metaclass helper for abstract attributes."""
+
 # https://stackoverflow.com/questions/23831510/abstract-attribute-not-property
 from abc import ABCMeta as NativeABCMeta
 
 
 class DummyAttribute:
     """Placeholder for abstract attributes."""
+
     pass
 
 

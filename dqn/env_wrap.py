@@ -148,7 +148,7 @@ class CustomEnvWrapper(gym.Env):
                     log_path, "a", newline=""
                 ) as f:  # Added newline='' for better csv handling
                     # Make sure all keys are present in all info dicts, or handle missing keys
-                    fieldnames = sorted(list(info.keys()))
+                    fieldnames = sorted(info.keys())
                     csv_writer = DictWriter(
                         f, delimiter=",", lineterminator="\n", fieldnames=fieldnames
                     )
@@ -158,7 +158,9 @@ class CustomEnvWrapper(gym.Env):
 
                     for log_info_row in self.log_info_buffer:
                         # Ensure all rows have all keys, fill with None if missing
-                        row_to_write = {key: log_info_row.get(key) for key in fieldnames}
+                        row_to_write = {
+                            key: log_info_row.get(key) for key in fieldnames
+                        }
                         csv_writer.writerow(row_to_write)
 
                 self.log_info_buffer = []

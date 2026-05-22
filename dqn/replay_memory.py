@@ -36,7 +36,7 @@ class ReplayMemoryNaive(ReplayMemory):
     def store_transitions(self, obses, actions, rews, dones, new_obses):
         """Appends new transitions to the deque."""
         for e, (obs, action, rew, done, new_obs) in enumerate(
-            zip(obses, actions, rews, dones, new_obses)
+            zip(obses, actions, rews, dones, new_obses, strict=False)
         ):
             transition = (obs, action, rew, done, new_obs)
             self.replay_buffer.append(transition)
@@ -74,7 +74,7 @@ class ReplayMemoryPrioritized(ReplayMemory):
             max_priority = self.max_priority_high
 
         for e, (obs, action, rew, done, new_obs) in enumerate(
-            zip(obses, actions, rews, dones, new_obses)
+            zip(obses, actions, rews, dones, new_obses, strict=False)
         ):
             transition = (obs, action, rew, done, new_obs)
             self.replay_buffer.add(max_priority, transition)
@@ -115,9 +115,10 @@ class ReplayMemoryPrioritized(ReplayMemory):
         """Updates priorities based on TD errors."""
         priorities = list(
             np.power(
-                np.minimum(abs_td_errors_np + self.epsilon, self.max_priority_high), self.alpha
+                np.minimum(abs_td_errors_np + self.epsilon, self.max_priority_high),
+                self.alpha,
             )
         )
 
-        for i, p in zip(tree_indices, priorities):
+        for i, p in zip(tree_indices, priorities, strict=False):
             self.replay_buffer.update(i, p)

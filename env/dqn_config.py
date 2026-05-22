@@ -20,7 +20,9 @@ CONFIG = SUMO_PARAMS.get("config", "1ramp_1x3")
 # Example: If an episode is 3600s (SUMO_PARAMS["steps"]), then max_episode_steps = 3600 / 40 = 90
 MAX_SIMULATION_SECONDS_PER_EPISODE = SUMO_PARAMS.get("steps", 3600)
 AGENT_CONTROL_CYCLE_SEC = 40.0  # From RLController
-MAX_AGENT_STEPS_PER_EPISODE = int(MAX_SIMULATION_SECONDS_PER_EPISODE / AGENT_CONTROL_CYCLE_SEC)
+MAX_AGENT_STEPS_PER_EPISODE = int(
+    MAX_SIMULATION_SECONDS_PER_EPISODE / AGENT_CONTROL_CYCLE_SEC
+)
 
 
 HYPER_PARAMS = {
@@ -65,7 +67,9 @@ import torch as T  # Make sure T is imported as torch
 
 
 class TwoStreamHybridNetwork(nn.Module):
-    def __init__(self, macro_vec_len, micro_shape_chw, cnn_params, dense_params, activation_fn):
+    def __init__(
+        self, macro_vec_len, micro_shape_chw, cnn_params, dense_params, activation_fn
+    ):
         """
         Initializes the two-stream network.
         Args:
@@ -79,7 +83,9 @@ class TwoStreamHybridNetwork(nn.Module):
 
         self.macro_len = macro_vec_len
         self.micro_shape = micro_shape_chw
-        self.micro_flat_len = micro_shape_chw[0] * micro_shape_chw[1] * micro_shape_chw[2]
+        self.micro_flat_len = (
+            micro_shape_chw[0] * micro_shape_chw[1] * micro_shape_chw[2]
+        )
 
         # --- Define the Micro (CNN) Stream ---
         cnn_layers = []
@@ -87,7 +93,13 @@ class TwoStreamHybridNetwork(nn.Module):
         for filters, kernel, stride in cnn_params:
             padding = (kernel[0] // 2, kernel[1] // 2)
             cnn_layers.append(
-                nn.Conv2d(in_channels, filters, kernel_size=kernel, stride=stride, padding=padding)
+                nn.Conv2d(
+                    in_channels,
+                    filters,
+                    kernel_size=kernel,
+                    stride=stride,
+                    padding=padding,
+                )
             )
             cnn_layers.append(activation_fn)
             in_channels = filters

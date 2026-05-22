@@ -20,9 +20,13 @@ def wrap_max_episode_steps(env, max_episode_steps):
 def make_vec_env(env, n_env):
     """Creates vectorized environment for parallel execution."""
     if n_env > 1:
-        return SubprocVecEnv([lambda: Monitor(env, allow_early_resets=True) for _ in range(n_env)])
+        return SubprocVecEnv(
+            [lambda: Monitor(env, allow_early_resets=True) for _ in range(n_env)]
+        )
     else:
-        return DummyVecEnv([lambda: Monitor(env, allow_early_resets=True) for _ in range(n_env)])
+        return DummyVecEnv(
+            [lambda: Monitor(env, allow_early_resets=True) for _ in range(n_env)]
+        )
 
 
 def make_env(env, repeat=0, max_episode_steps=0, n_env=0):

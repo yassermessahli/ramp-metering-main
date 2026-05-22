@@ -12,11 +12,13 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 # --- The only parser we need for XML/logs ---
-from evaluation.parsers import parse_framework_log, parse_sumo_log, parse_tripinfo_for_episode_stats
-from play import Play
-
-from env import SUMO_PARAMS
+from evaluation.parsers import (
+    parse_framework_log,
+    parse_sumo_log,
+    parse_tripinfo_for_episode_stats,
+)
 from observe import Observe
+from play import Play
 
 STRATEGIES = {
     "DQNAgent": Observe,
@@ -68,7 +70,10 @@ def main():
         help="Number of episodes to run for the evaluation.",
     )
     parser.add_argument(
-        "--master-seed", type=int, default=42, help="The master seed for reproducibility."
+        "--master-seed",
+        type=int,
+        default=42,
+        help="The master seed for reproducibility.",
     )
     parser.add_argument(
         "-d",
@@ -84,7 +89,9 @@ def main():
         default="./logs/evaluation/results/",
         help="Directory to save the final results CSV.",
     )
-    parser.add_argument("-g", "--gpu", type=str, default="0", help="GPU to use for the agent.")
+    parser.add_argument(
+        "-g", "--gpu", type=str, default="0", help="GPU to use for the agent."
+    )
     parser.add_argument(
         "--headless",
         action="store_true",
@@ -96,7 +103,9 @@ def main():
     strategy_class = STRATEGIES[args.strategy]
 
     # --- Output paths ---
-    temp_sumo_log_path = os.path.join(args.output_dir, f"temp_sumo_log_{args.strategy}.log")
+    temp_sumo_log_path = os.path.join(
+        args.output_dir, f"temp_sumo_log_{args.strategy}.log"
+    )
     tripinfo_root = os.path.join(".", "tripinfo_runs", args.strategy)
     os.makedirs(tripinfo_root, exist_ok=True)
 
@@ -131,7 +140,9 @@ def main():
             temp_framework_log_path = os.path.join(args.output_dir, args.strategy)
         else:
             if not args.model_path:
-                print(f"{Fore.RED}\nError: --model-path is required for DQNAgent.{Style.RESET_ALL}")
+                print(
+                    f"{Fore.RED}\nError: --model-path is required for DQNAgent.{Style.RESET_ALL}"
+                )
                 return
             mock_args_dict.update({"d": args.model_path, "gpu": args.gpu})
             model_pack_name = args.model_path.split("/")[-1].split("_model.pack")[0]
@@ -153,7 +164,9 @@ def main():
         # Parse SUMO logs
         sumo_stats = parse_sumo_log(temp_sumo_log_path)
         # Parse framework-specific logs
-        framework_stats = parse_framework_log(temp_framework_log_path, spillback_threshold=20)
+        framework_stats = parse_framework_log(
+            temp_framework_log_path, spillback_threshold=20
+        )
 
         combined_stats = {
             "episode_id": episode,
@@ -175,7 +188,9 @@ def main():
         results_df = pd.DataFrame(all_episode_metrics)
         final_csv_path = os.path.join(args.output_dir, f"results_{args.strategy}.csv")
         results_df.to_csv(final_csv_path, index=False, float_format="%.4f")
-        print(f"\n{Fore.GREEN}--- Evaluation Complete: {args.strategy} ---{Style.RESET_ALL}")
+        print(
+            f"\n{Fore.GREEN}--- Evaluation Complete: {args.strategy} ---{Style.RESET_ALL}"
+        )
         print(f"Results for {args.num_episodes} episodes saved to: {final_csv_path}")
     else:
         print(

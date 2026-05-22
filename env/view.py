@@ -24,7 +24,11 @@ class PygletView(pyglet.window.Window if PYGLET else object):
             len(points),
             (
                 "v3f/stream",
-                [item for sublist in map(lambda p: [p[0], p[1], 0], points) for item in sublist],
+                [
+                    item
+                    for sublist in ([p[0], p[1], 0] for p in points)
+                    for item in sublist
+                ],
             ),
             ("c3B", PygletView.color_polygon(len(points), color)),
         )
@@ -33,7 +37,7 @@ class PygletView(pyglet.window.Window if PYGLET else object):
     def color_polygon(n, color):
         """Repeats color value for n vertices."""
         colors = []
-        for i in range(n):
+        for _i in range(n):
             colors.extend(color)
         return colors
 
@@ -48,10 +52,15 @@ class PygletView(pyglet.window.Window if PYGLET else object):
     @staticmethod
     def draw_vertices(vertices, color):
         """Draws lines connecting vertices."""
-        [PygletView.points_to_pyglet_vertex(vertex, color).draw(gl.GL_LINES) for vertex in vertices]
+        [
+            PygletView.points_to_pyglet_vertex(vertex, color).draw(gl.GL_LINES)
+            for vertex in vertices
+        ]
 
     @staticmethod
-    def draw_label_top_left(text, x, y, y_offset=0, margin=50, font_size=40, color=(0, 0, 0, 255)):
+    def draw_label_top_left(
+        text, x, y, y_offset=0, margin=50, font_size=40, color=(0, 0, 0, 255)
+    ):
         """Renders text label at top left of window."""
         pyglet.text.Label(
             text,
@@ -78,7 +87,10 @@ class PygletView(pyglet.window.Window if PYGLET else object):
 
         super().__init__(width, height, name, resizable=True)
         glClearColor(
-            background_color[0] / 255, background_color[1] / 255, background_color[2] / 255, 1
+            background_color[0] / 255,
+            background_color[1] / 255,
+            background_color[2] / 255,
+            1,
         )
         self.zoom = 1
         self.key = None

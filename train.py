@@ -5,8 +5,8 @@ import time
 from datetime import timedelta
 
 from colorama import Fore
-from dqn import Agents, CustomEnvWrapper, make_env
 
+from dqn import Agents, CustomEnvWrapper, make_env
 from env import HYPER_PARAMS, CustomEnv, network_config
 
 
@@ -72,12 +72,18 @@ class Train:
         # Initial reset of environment
         obses = self.env.reset()
         for t in range(self.agent.min_buffer_size // self.agent.n_env):
-            if t >= (self.agent.min_buffer_size // self.agent.n_env) - self.agent.resume_step:
+            if (
+                t
+                >= (self.agent.min_buffer_size // self.agent.n_env)
+                - self.agent.resume_step
+            ):
                 # Select actions using current policy
                 actions = self.agent.choose_actions(obses)
             else:
                 # Random sampling for buffer initialization
-                actions = [self.env.action_space.sample() for _ in range(self.agent.n_env)]
+                actions = [
+                    self.env.action_space.sample() for _ in range(self.agent.n_env)
+                ]
 
             # Execute actions in environment
             new_obses, rews, dones, _ = self.env.step(actions)
@@ -87,11 +93,19 @@ class Train:
             obses = new_obses
 
             if (t + 1) % (10000 // self.agent.n_env) == 0:
-                print(str((t + 1) * self.agent.n_env) + " / " + str(self.agent.min_buffer_size))
+                print(
+                    str((t + 1) * self.agent.n_env)
+                    + " / "
+                    + str(self.agent.min_buffer_size)
+                )
                 print(
                     Fore.LIGHTRED_EX,
                     "---",
-                    str(timedelta(seconds=round((time.time() - self.agent.start_time), 0))),
+                    str(
+                        timedelta(
+                            seconds=round((time.time() - self.agent.start_time), 0)
+                        )
+                    ),
                     "---",
                     Fore.RESET,
                 )
@@ -128,7 +142,10 @@ class Train:
             # Checkpointing model
             self.agent.save_model()
 
-            if bool(self.max_total_steps) and (step * self.agent.n_env) >= self.max_total_steps:
+            if (
+                bool(self.max_total_steps)
+                and (step * self.agent.n_env) >= self.max_total_steps
+            ):
                 self.agent.save_model(force=True)
                 return
 
@@ -141,17 +158,30 @@ class Train:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TRAIN")
-    str2bool = lambda v: v.lower() in ("yes", "y", "true", "t", "1")
+    def str2bool(v):
+        return v.lower() in ("yes", "y", "true", "t", "1")
     parser.add_argument("-gpu", type=str, default=HYPER_PARAMS["gpu"], help="GPU #")
     parser.add_argument(
-        "-n_env", type=int, default=HYPER_PARAMS["n_env"], help="Multi-processing environments"
+        "-n_env",
+        type=int,
+        default=HYPER_PARAMS["n_env"],
+        help="Multi-processing environments",
     )
-    parser.add_argument("-lr", type=float, default=HYPER_PARAMS["lr"], help="Learning rate")
-    parser.add_argument("-gamma", type=float, default=HYPER_PARAMS["gamma"], help="Discount factor")
     parser.add_argument(
-        "-eps_start", type=float, default=HYPER_PARAMS["eps_start"], help="Epsilon start"
+        "-lr", type=float, default=HYPER_PARAMS["lr"], help="Learning rate"
     )
-    parser.add_argument("-eps_min", type=float, default=HYPER_PARAMS["eps_min"], help="Epsilon min")
+    parser.add_argument(
+        "-gamma", type=float, default=HYPER_PARAMS["gamma"], help="Discount factor"
+    )
+    parser.add_argument(
+        "-eps_start",
+        type=float,
+        default=HYPER_PARAMS["eps_start"],
+        help="Epsilon start",
+    )
+    parser.add_argument(
+        "-eps_min", type=float, default=HYPER_PARAMS["eps_min"], help="Epsilon min"
+    )
     parser.add_argument(
         "-eps_dec", type=float, default=HYPER_PARAMS["eps_dec"], help="Epsilon decay"
     )
@@ -163,10 +193,16 @@ if __name__ == "__main__":
     )
     parser.add_argument("-bs", type=int, default=HYPER_PARAMS["bs"], help="Batch size")
     parser.add_argument(
-        "-min_mem", type=int, default=HYPER_PARAMS["min_mem"], help="Replay memory buffer min size"
+        "-min_mem",
+        type=int,
+        default=HYPER_PARAMS["min_mem"],
+        help="Replay memory buffer min size",
     )
     parser.add_argument(
-        "-max_mem", type=int, default=HYPER_PARAMS["max_mem"], help="Replay memory buffer max size"
+        "-max_mem",
+        type=int,
+        default=HYPER_PARAMS["max_mem"],
+        help="Replay memory buffer max size",
     )
     parser.add_argument(
         "-target_update_freq",
@@ -195,8 +231,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "-save_dir", type=str, default=HYPER_PARAMS["save_dir"], help="Save directory"
     )
-    parser.add_argument("-log_dir", type=str, default=HYPER_PARAMS["log_dir"], help="Log directory")
-    parser.add_argument("-load", type=str2bool, default=HYPER_PARAMS["load"], help="Load model")
+    parser.add_argument(
+        "-log_dir", type=str, default=HYPER_PARAMS["log_dir"], help="Log directory"
+    )
+    parser.add_argument(
+        "-load", type=str2bool, default=HYPER_PARAMS["load"], help="Load model"
+    )
     parser.add_argument(
         "-repeat", type=int, default=HYPER_PARAMS["repeat"], help="Steps repeat action"
     )

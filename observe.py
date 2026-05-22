@@ -1,11 +1,11 @@
-from env import HYPER_PARAMS, network_config, CustomEnv, View
-from dqn import CustomEnvWrapper, make_env, Networks
-
-import os
 import argparse
-import numpy as np
+import os
 
-from torch import device, cuda
+import numpy as np
+from torch import cuda, device
+
+from dqn import CustomEnvWrapper, Networks, make_env
+from env import HYPER_PARAMS, CustomEnv, View, network_config
 
 
 class Observe(View):
@@ -21,7 +21,7 @@ class Observe(View):
         if hasattr(args, "headless") and args.headless:
             gui_override = False
 
-        super(Observe, self).__init__(
+        super().__init__(
             type(self).__name__.upper(),
             make_env(
                 env=CustomEnvWrapper(
@@ -113,15 +113,24 @@ class Observe(View):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OBSERVE")
-    str2bool = lambda v: v.lower() in ("yes", "y", "true", "t", "1")
+    def str2bool(v):
+        return v.lower() in ("yes", "y", "true", "t", "1")
     parser.add_argument("-d", type=str, default="", help="Directory", required=True)
     parser.add_argument("-gpu", type=str, default="0", help="GPU #")
     parser.add_argument(
         "-max_s", type=int, default=0, help="Max steps per episode if > 0, else inf"
     )
-    parser.add_argument("-max_e", type=int, default=0, help="Max episodes if > 0, else inf")
-    parser.add_argument("-log", type=str2bool, default=False, help="Log csv to ./logs/test/")
-    parser.add_argument("-log_s", type=int, default=0, help="Log step if > 0, else episode")
-    parser.add_argument("-log_dir", type=str, default="./logs/test/", help="Log directory")
+    parser.add_argument(
+        "-max_e", type=int, default=0, help="Max episodes if > 0, else inf"
+    )
+    parser.add_argument(
+        "-log", type=str2bool, default=False, help="Log csv to ./logs/test/"
+    )
+    parser.add_argument(
+        "-log_s", type=int, default=0, help="Log step if > 0, else episode"
+    )
+    parser.add_argument(
+        "-log_dir", type=str, default="./logs/test/", help="Log directory"
+    )
 
     Observe(parser.parse_args()).run()

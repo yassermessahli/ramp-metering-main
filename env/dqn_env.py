@@ -31,7 +31,9 @@ class DqnEnv:
         if self.mode["train"]:
             self.sumo_env = RLController(gui=False, log=False, rnd=(False, False))
         elif self.mode["observe"]:
-            self.sumo_env = RLController(gui=gui_setting, log=True, rnd=SUMO_PARAMS["rnd"])
+            self.sumo_env = RLController(
+                gui=gui_setting, log=True, rnd=SUMO_PARAMS["rnd"]
+            )
         elif self.mode["play"]:
             if p == "Test":
                 self.sumo_env = RLController(

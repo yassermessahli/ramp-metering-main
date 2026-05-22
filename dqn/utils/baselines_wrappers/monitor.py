@@ -7,7 +7,9 @@ class Monitor(Wrapper):
     EXT = "monitor.csv"
     f = None
 
-    def __init__(self, env, allow_early_resets=False, reset_keywords=(), info_keywords=()):
+    def __init__(
+        self, env, allow_early_resets=False, reset_keywords=(), info_keywords=()
+    ):
         Wrapper.__init__(self, env=env)
         self.tstart = time.time()
 
@@ -20,23 +22,24 @@ class Monitor(Wrapper):
         self.episode_lengths = []
         self.episode_times = []
         self.total_steps = 0
-        self.current_reset_info = {} # extra info about the current episode, that was passed in during reset()
+        self.current_reset_info = {}  # extra info about the current episode, that was passed in during reset()
 
     def reset(self, **kwargs):
         self.reset_state()
         for k in self.reset_keywords:
             v = kwargs.get(k)
             if v is None:
-                raise ValueError('Expected you to pass kwarg %s into reset'%k)
+                raise ValueError(f"Expected you to pass kwarg {k} into reset")
             self.current_reset_info[k] = v
         return self.env.reset(**kwargs)
 
     def reset_state(self):
         if not self.allow_early_resets and not self.needs_reset:
-            raise RuntimeError("Tried to reset an environment before done. If you want to allow early resets, wrap your env with Monitor(env, path, allow_early_resets=True)")
+            raise RuntimeError(
+                "Tried to reset an environment before done. If you want to allow early resets, wrap your env with Monitor(env, path, allow_early_resets=True)"
+            )
         self.rewards = []
         self.needs_reset = False
-
 
     def step(self, action):
         if self.needs_reset:
@@ -59,7 +62,11 @@ class Monitor(Wrapper):
             self.needs_reset = True
             eprew = sum(self.rewards)
             eplen = len(self.rewards)
-            epinfo = {"r": round(eprew, 6), "l": eplen, "t": round(time.time() - self.tstart, 6)}
+            epinfo = {
+                "r": round(eprew, 6),
+                "l": eplen,
+                "t": round(time.time() - self.tstart, 6),
+            }
             for k in self.info_keywords:
                 epinfo[k] = info[k]
             self.episode_rewards.append(eprew)
@@ -68,7 +75,7 @@ class Monitor(Wrapper):
             epinfo.update(self.current_reset_info)
             assert isinstance(info, dict)
             if isinstance(info, dict):
-                info['episode'] = epinfo
+                info["episode"] = epinfo
 
         self.total_steps += 1
 

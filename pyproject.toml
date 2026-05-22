@@ -1,11 +1,10 @@
 [project]
-name = "youcef-drl-rmc-pfe-2025"
+name = "Ramp-Metering-PFE"
 version = "0.1.0"
 description = "DQN-based ramp metering control for a SUMO highway corridor."
 readme = "README.md"
 requires-python = ">=3.10,<3.11"
 dependencies = [
-    # Core runtime dependencies translated from bin/environment.yml.
     "cloudpickle==2.2.1",
     "colorama==0.4.6",
     "gymnasium==0.28.1",
@@ -15,12 +14,9 @@ dependencies = [
     "tensorboard==2.11.2",
     "torch==1.13.1",
     "tqdm==4.64.1",
-    # Keep these aligned with the installed SUMO binary.
-    # The current machine has SUMO 1.26.0; use 1.21.0 instead if you run
-    # against the exact old Conda environment from bin/environment.yml.
     "sumolib==1.26.0",
     "traci==1.26.0",
-    "setuptools>=82.0.0",
+    "setuptools>=65.5.1,<82",
 ]
 
 [project.optional-dependencies]
@@ -32,6 +28,67 @@ analysis = [
     "scipy==1.7.3",
     "seaborn==0.12.2",
 ]
+
+
+# Ruff
+# From the project root, with your uv + Ruff setup:
+# `uv run ruff check --fix .`
+
+# That applies all safe auto-fixes from the enabled lint rules (fixable = ["ALL"] in your config).
+# To also apply formatting:
+# `uv run ruff format .`
+
+# Or both in one go:
+# `uv run ruff check --fix . && uv run ruff format .`
+
+# For fixes Ruff marks as unsafe (not applied by default):
+# `uv run ruff check --fix --unsafe-fixes`.
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9.0",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "logs",
+    "save",
+    "tripinfo_runs",
+    "evaluation/notebooks",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by the formatter)
+]
+fixable = ["ALL"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["dqn", "env", "evaluation"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.uv]
 package = false

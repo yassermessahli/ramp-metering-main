@@ -191,9 +191,7 @@ class RLController(SumoEnv):
         self._reset_cycle_aggregators()
         self.last_action_value_sec = self.green_time_actions_sec[0]
         self._initialize_last_detailed_info_placeholders()  # Re-initialize placeholders on reset
-        self._last_detailed_info.update(
-            super().log_info()
-        )  # Get initial sim_time, episode
+        self._last_detailed_info.update(super().log_info())  # Get initial sim_time, episode
 
         if self.ramp_meter_id and self.red_phase_index != -1:
             self.set_phase(self.ramp_meter_id, self.red_phase_index)
@@ -327,9 +325,7 @@ class RLController(SumoEnv):
             "penalty_spillback_comp": self._penalty_spillback(),
         }
 
-        info_for_this_step.update(
-            super().log_info()
-        )  # Adds sim_time, episode, total_...
+        info_for_this_step.update(super().log_info())  # Adds sim_time, episode, total_...
 
         self._last_detailed_info = info_for_this_step.copy()
 

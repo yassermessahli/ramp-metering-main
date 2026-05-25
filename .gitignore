@@ -8,8 +8,7 @@ logs/train/*
 
 # SUMO outputs
 env/custom_env/data/1ramp_1x3/induction_loop_data/
-env/custom_env/
-
+env/custom_env/data/1ramp_1x3/tripinfo.xml
 
 # Python specific
 __pycache__/

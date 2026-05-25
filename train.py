@@ -158,8 +158,10 @@ class Train:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TRAIN")
+
     def str2bool(v):
         return v.lower() in ("yes", "y", "true", "t", "1")
+
     parser.add_argument("-gpu", type=str, default=HYPER_PARAMS["gpu"], help="GPU #")
     parser.add_argument(
         "-n_env",

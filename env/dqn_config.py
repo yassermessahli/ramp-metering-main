@@ -2,6 +2,7 @@
 
 # Assuming SUMO_PARAMS is needed for the CONFIG string used in save/log directories
 # This import means dqn_config.py is likely in rl_env/ and custom_env is rl_env/custom_env/
+import torch as T  # Make sure T is imported as torch
 import torch.nn as nn
 import torch.optim as optim
 
@@ -62,8 +63,6 @@ HYPER_PARAMS = {
 # --- NETWORK CONFIGURATION FUNCTION ---
 # Place this custom class definition at the top of dqn_config.py,
 # right after the imports.
-
-import torch as T  # Make sure T is imported as torch
 
 
 class TwoStreamHybridNetwork(nn.Module):

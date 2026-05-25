@@ -1,10 +1,9 @@
 import json
 import os
 import random
+import subprocess
 import sys
 import threading
-import time
-import subprocess
 
 import numpy as np
 from colorama import Fore

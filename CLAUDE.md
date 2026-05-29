@@ -11,6 +11,7 @@
 **Deep Reinforcement Learning for Automatic Ramp Metering Control** on a highway corridor.
 
 A DRL agent controls a traffic signal (ramp meter) at a highway on-ramp to:
+
 1. Maintain free-flow speed on the mainline at and upstream of the merge zone.
 2. Maximize downstream throughput.
 3. Limit on-ramp queue length to prevent spillback onto the arterial network.
@@ -120,7 +121,7 @@ Agent (abstract)
 
 - **DeepQNetwork**: Configurable MLP body → Q-values
 - **DuelingDeepQNetwork**: MLP body → value stream + advantage stream → Q = V + (A − mean(A))
-- **TwoStreamHybridNetwork** *(active)*: Splits 284-d input → macro (14-d) via FC + micro (270-d reshaped to 2×27×5) via CNN → concatenate → FC layers
+- **TwoStreamHybridNetwork** _(active)_: Splits 284-d input → macro (14-d) via FC + micro (270-d reshaped to 2×27×5) via CNN → concatenate → FC layers
 
 ---
 
@@ -135,22 +136,22 @@ Agent (abstract)
 
 ## Active Configuration
 
-| Parameter              | Value                               |
-| ---------------------- | ----------------------------------- |
-| Algorithm              | `DuelingDoubleDQNAgent`             |
-| State dimension        | 284 (14 macro + 270 micro grid)     |
-| Action space           | 8 discrete (green time: 5–40s, 5s steps) |
-| Control cycle          | 40 seconds                          |
-| Learning rate          | 1e-4 (Adam)                         |
-| Discount (γ)           | 0.99                                |
-| Epsilon                | 1.0 → 0.01 (exponential, over 2M steps) |
-| Batch size             | 32                                  |
-| Replay buffer          | 1M transitions (uniform sampling)  |
-| Min buffer before learn| 100K transitions                    |
-| Target update          | Soft Polyak (τ = 1e-3) every step   |
-| Loss                   | SmoothL1Loss (Huber)                |
-| Max training steps     | 2.1M agent steps                    |
-| Episode length         | 3600s (1 hour sim time, ~90 steps)  |
+| Parameter               | Value                                    |
+| ----------------------- | ---------------------------------------- |
+| Algorithm               | `DuelingDoubleDQNAgent`                  |
+| State dimension         | 284 (14 macro + 270 micro grid)          |
+| Action space            | 8 discrete (green time: 5–40s, 5s steps) |
+| Control cycle           | 40 seconds                               |
+| Learning rate           | 1e-4 (Adam)                              |
+| Discount (γ)            | 0.99                                     |
+| Epsilon                 | 1.0 → 0.01 (exponential, over 2M steps)  |
+| Batch size              | 32                                       |
+| Replay buffer           | 1M transitions (uniform sampling)        |
+| Min buffer before learn | 100K transitions                         |
+| Target update           | Soft Polyak (τ = 1e-3) every step        |
+| Loss                    | SmoothL1Loss (Huber)                     |
+| Max training steps      | 2.1M agent steps                         |
+| Episode length          | 3600s (1 hour sim time, ~90 steps)       |
 
 ---
 
@@ -174,31 +175,32 @@ Theoretical range: **[−24, +3]**.
 
 ## Entry Points
 
-| Command                          | Description                                    |
-| -------------------------------- | ---------------------------------------------- |
-| `python train.py`                | Train from scratch                             |
-| `python train.py --load True`    | Resume training from checkpoint                |
-| `python train.py --gui True`     | Train with SUMO GUI visible                    |
-| `python play.py --strategy X`    | Run a baseline strategy (AlwaysGreen, etc.)    |
-| `python observe.py --load path`  | Run trained model for inference                |
-| `python evaluate.py`             | Batch evaluate over N episodes                 |
+| Command                         | Description                                 |
+| ------------------------------- | ------------------------------------------- |
+| `python train.py`               | Train from scratch                          |
+| `python train.py --load True`   | Resume training from checkpoint             |
+| `python train.py --gui True`    | Train with SUMO GUI visible                 |
+| `python play.py --strategy X`   | Run a baseline strategy (AlwaysGreen, etc.) |
+| `python observe.py --load path` | Run trained model for inference             |
+| `python evaluate.py`            | Batch evaluate over N episodes              |
 
 ---
 
 ## Baselines
 
-| Baseline       | Strategy                                                     |
-| -------------- | ------------------------------------------------------------ |
-| AlwaysGreen    | No metering — ramp signal permanently green                  |
-| FixedCycle     | Fixed 20s green / 20s red alternation                        |
-| ALINEA         | Proportional feedback on downstream occupancy (O_crit=17%)   |
-| PI-ALINEA      | Proportional-integral feedback (K_P=60, K_I=10)              |
+| Baseline    | Strategy                                                   |
+| ----------- | ---------------------------------------------------------- |
+| AlwaysGreen | No metering — ramp signal permanently green                |
+| FixedCycle  | Fixed 20s green / 20s red alternation                      |
+| ALINEA      | Proportional feedback on downstream occupancy (O_crit=17%) |
+| PI-ALINEA   | Proportional-integral feedback (K_P=60, K_I=10)            |
 
 ---
 
 ## Model Persistence
 
 Models are saved as **msgpack** files (not PyTorch `.pt`), containing:
+
 - Network parameters as NumPy arrays
 - Training step count, episode count, mean reward, mean episode length
 
@@ -237,11 +239,11 @@ These are documented weaknesses in the base project:
 
 Flows are drawn from weighted discrete distributions each episode:
 
-| Flow Type  | Values (veh/h)                         | Bias              |
-| ---------- | -------------------------------------- | ----------------- |
-| Mainline   | 4000, 4500, 5000, 5500, 6000, 6500    | Towards higher    |
-| On-ramp    | 1400, 1500, 1600, 1700, 1800, 1900, 2000 | Towards higher |
-| Off-ramp   | 100, 300, 500                          | Uniform           |
+| Flow Type | Values (veh/h)                           | Bias           |
+| --------- | ---------------------------------------- | -------------- |
+| Mainline  | 4000, 4500, 5000, 5500, 6000, 6500       | Towards higher |
+| On-ramp   | 1400, 1500, 1600, 1700, 1800, 1900, 2000 | Towards higher |
+| Off-ramp  | 100, 300, 500                            | Uniform        |
 
 ---
 
@@ -257,4 +259,4 @@ The hybrid state includes a spatial grid populated by connected vehicle position
 
 ---
 
-*This file is intended for AI assistant context. See `README.md` for the full technical analysis.*
+_This file is intended for AI assistant context. See `README.md` for the full technical analysis._

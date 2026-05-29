@@ -2,10 +2,11 @@ env/custom_env/data/1ramp_1x3/induction_loop_data
 env/custom_env/data/1ramp_1x3/tripinfo.xml
 env/custom_env/data/1ramp_1x3/1ramp_1x3.rou.xml
 
-# Ignore data and img folders in logs/test
+# Ignore log data and img folders
 logs/test/*
 logs/evaluation/*
 logs/train/*
+evaluation/notebooks/plots
 
 # SUMO outputs
 env/custom_env/data/1ramp_1x3/induction_loop_data/

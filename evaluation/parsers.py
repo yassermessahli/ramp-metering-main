@@ -163,6 +163,12 @@ def parse_framework_log(log_path, spillback_threshold=20):
         f"avg_{col}": df[col].mean() for col in avg_metric_cols if col in df.columns
     }
 
+    # Lane-VSL actuator usage (only present for the lane_control variant).
+    if "lane_closed" in df.columns:
+        lane_series = pd.to_numeric(df["lane_closed"], errors="coerce").fillna(0)
+        avg_metrics["lane_closure_rate"] = float(lane_series.mean())
+        avg_metrics["lane_closure_steps"] = int(lane_series.sum())
+
     total_spillback_time = 0
     if "ramp_queue_veh" in df.columns and "sim_time" in df.columns:
         spillback_df = df[df["ramp_queue_veh"] > spillback_threshold]

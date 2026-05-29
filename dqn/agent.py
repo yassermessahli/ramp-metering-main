@@ -162,7 +162,9 @@ class Agent(metaclass=ABCMeta):
             self.target_network.load_state_dict(self.online_network.state_dict())
         elif self.target_soft_update:
             for target_network_param, online_network_param in zip(
-                self.target_network.parameters(), self.online_network.parameters(), strict=False
+                self.target_network.parameters(),
+                self.online_network.parameters(),
+                strict=False,
             ):
                 target_network_param.data.copy_(
                     (self.target_soft_update_tau * self.n_env)

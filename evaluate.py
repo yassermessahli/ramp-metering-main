@@ -186,7 +186,15 @@ def main():
 
     if all_episode_metrics:
         results_df = pd.DataFrame(all_episode_metrics)
-        final_csv_path = os.path.join(args.output_dir, f"results_{args.strategy}.csv")
+        # For DRL strategies, include the model identifier so different
+        # checkpoints (e.g. lane_control vs the prior ramp-only variant) don't
+        # silently overwrite each other.
+        if strategy_class == Play:
+            results_basename = f"results_{args.strategy}.csv"
+        else:
+            model_tag = os.path.basename(os.path.dirname(args.model_path)) or "model"
+            results_basename = f"results_{args.strategy}_{model_tag}.csv"
+        final_csv_path = os.path.join(args.output_dir, results_basename)
         results_df.to_csv(final_csv_path, index=False, float_format="%.4f")
         print(
             f"\n{Fore.GREEN}--- Evaluation Complete: {args.strategy} ---{Style.RESET_ALL}"

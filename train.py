@@ -152,7 +152,6 @@ class Train:
     def run(self):
         """Starts the training process."""
         self.init_replay_memory_buffer()
-
         self.train_loop()
 
 

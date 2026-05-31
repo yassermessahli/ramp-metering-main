@@ -7,6 +7,7 @@ try:
 except ImportError:
     import os
     import sys
+
     if "SUMO_HOME" in os.environ:
         sys.path.append(os.path.join(os.environ["SUMO_HOME"], "tools"))
     import traci  # noqa
@@ -27,7 +28,7 @@ class RLController(SumoEnv):
     the ramp).
     """
 
-    TARGET_VSL_LANE_ID = "acceleration_area_1"
+    TARGET_VSL_LANE_ID = "vsl_zone_0"
     LANE_CLOSED_SPEED_MPS = 5.0
 
     def __init__(self, *args, **kwargs):
@@ -71,8 +72,8 @@ class RLController(SumoEnv):
         self.outflow_detector_ids_reward = self.downstream_mainline_all_detector_ids
         self.ramp_queue_detector_id = "queue_sens"
 
-        # Macro-only state: 14 features. No micro grid is used in this variant.
-        self.observation_space_n = 14
+        # Macro-only state: 15 features (14 macro + last_lane_action). No micro grid.
+        self.observation_space_n = 15
 
         self.last_action_value_sec = self.green_time_actions_sec[0]
         self.last_lane_action = 0  # 0=open, 1=closed
@@ -147,15 +148,29 @@ class RLController(SumoEnv):
         """Apply the chosen lane-VSL action to the target lane via TraCI."""
         if self.lane_default_speed_mps is None:
             return
-        try:
-            speed = (
-                self.LANE_CLOSED_SPEED_MPS
-                if lane_idx == 1
-                else self.lane_default_speed_mps
+        speed = (
+            self.LANE_CLOSED_SPEED_MPS if lane_idx == 1 else self.lane_default_speed_mps
+        )
+        traci.lane.setMaxSpeed(self.TARGET_VSL_LANE_ID, speed)
+
+        # VMS POI indicator
+        poi_id = "vsl_indicator_" + self.TARGET_VSL_LANE_ID
+        if poi_id not in traci.poi.getIDList():
+            shape = traci.lane.getShape(self.TARGET_VSL_LANE_ID)
+            x, y = shape[0]
+            traci.poi.add(
+                poi_id,
+                x,
+                y,
+                (255, 255, 255, 255),
+                poiType="vms",
+                layer=100,
+                width=5,
+                height=5,
             )
-            traci.lane.setMaxSpeed(self.TARGET_VSL_LANE_ID, speed)
-        except traci.TraCIException:
-            pass
+
+        color = (255, 0, 0, 255) if lane_idx == 1 else (0, 255, 0, 255)
+        traci.poi.setColor(poi_id, color)
 
     def _collect_data_at_cycle_end(self):
         self.processed_flow_upstream_vph = self.get_loops_flow_interval(
@@ -473,6 +488,7 @@ class RLController(SumoEnv):
                 norm_occ_lane_0_upstream,
                 norm_speed_lane_0_upstream,
                 norm_last_action,
+                float(self.last_lane_action),
             ],
             dtype=np.float32,
         )

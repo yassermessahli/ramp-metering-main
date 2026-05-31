@@ -1,39 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2025-03-18 09:58:44 by Eclipse SUMO netedit Version 1.18.0
-<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">
+<!-- generated on 2026-05-31T15:34:13.246998+01:00 by Eclipse SUMO netedit 1.27.0
+<neteditConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">
 
     <input>
-        <additional-files value="/home/youcef/Desktop/Ramp/data/1ramp_1x3/ramp.add.xml"/>
-        <sumo-net-file value="/home/youcef/Desktop/Ramp/data/1ramp_1x3/ramp.net.xml"/>
+        <sumo-net-file value="env/custom_env/data/1ramp_1x3/1ramp_1x3.net.xml"/>
     </input>
 
     <output>
-        <output-file value="/home/youcef/Desktop/Ramp/data/1ramp_1x3/ramp.net.xml"/>
+        <output-file value="env/custom_env/data/1ramp_1x3/1ramp_1x3.net.xml"/>
     </output>
 
     <processing>
         <geometry.min-radius.fix.railways value="false"/>
+        <geometry.avoid-overlap value="false"/>
         <geometry.max-grade.fix value="false"/>
         <offset.disable-normalization value="true"/>
-        <lefthand value="0"/>
     </processing>
 
     <junctions>
         <no-turnarounds value="true"/>
-        <junctions.corner-detail value="5"/>
-        <junctions.limit-turn-speed value="5.50"/>
-        <rectangular-lane-cut value="0"/>
     </junctions>
 
-    <pedestrian>
-        <walkingareas value="0"/>
-    </pedestrian>
-
-</configuration>
+</neteditConfiguration>
 -->
 
-<net version="1.16" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+<net version="1.20" junctionCornerDetail="5" limitTurnSpeed="5.50" avoidOverlap="0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
 
     <location netOffset="0.00,0.00" convBoundary="-784.72,-107.95,457.90,207.30" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
 
@@ -71,6 +63,11 @@
     <edge id=":ramp_meter_0" function="internal">
         <lane id=":ramp_meter_0_0" index="0" speed="13.89" length="0.10" shape="-3.74,36.34 -3.74,36.34"/>
     </edge>
+    <edge id=":vsl_begin_0" function="internal">
+        <lane id=":vsl_begin_0_0" index="0" speed="27.77" length="0.31" shape="-17.64,53.46 -17.32,53.45"/>
+        <lane id=":vsl_begin_0_1" index="1" speed="27.77" length="0.31" shape="-17.55,56.65 -17.24,56.65"/>
+        <lane id=":vsl_begin_0_2" index="2" speed="27.77" length="0.31" shape="-17.45,59.85 -17.16,59.85"/>
+    </edge>
 
     <edge id="acceleration_area" from="merge_beginning" to="merge_end" priority="-1" spreadType="center" shape="79.43,54.04 103.21,54.69 251.44,61.23">
         <lane id="acceleration_area_0" index="0" speed="22.22" length="193.79" acceleration="1" shape="57.94,48.65 103.38,49.89 251.65,56.43"/>
@@ -88,10 +85,10 @@
         <lane id="entry_1" index="1" speed="27.77" length="225.64" shape="-784.72,207.30 -743.39,185.28 -696.33,164.29 -653.51,148.26 -594.27,129.84 -575.40,124.84"/>
         <lane id="entry_2" index="2" speed="27.77" length="225.64" shape="-783.22,210.12 -741.98,188.16 -695.12,167.25 -652.47,151.29 -593.38,132.92 -574.58,127.94"/>
     </edge>
-    <edge id="main_road" from="highway_beginning" to="merge_beginning" priority="-1" spreadType="center" shape="-480.85,104.34 -459.67,101.35 -421.91,94.56 -343.49,78.56 -221.14,65.91 -127.29,61.57 -17.73,56.66 14.14,55.87 46.00,55.42 79.43,54.04">
-        <lane id="main_road_0" index="0" speed="27.77" length="488.34" shape="-441.45,94.82 -422.51,91.42 -343.98,75.39 -221.38,62.72 -127.44,58.37 -17.84,53.46 14.08,52.67 44.40,52.24"/>
-        <lane id="main_road_1" index="1" speed="27.77" length="488.34" shape="-441.01,97.99 -421.91,94.56 -343.49,78.56 -221.14,65.91 -127.29,61.57 -17.73,56.66 14.14,55.87 44.54,55.44"/>
-        <lane id="main_road_2" index="2" speed="27.77" length="488.34" shape="-440.56,101.16 -421.31,97.70 -343.00,81.73 -220.90,69.10 -127.14,64.77 -17.62,59.86 14.20,59.07 44.67,58.64"/>
+    <edge id="main_road" from="highway_beginning" to="vsl_begin" priority="-1" spreadType="center" shape="-480.85,104.34 -459.67,101.35 -421.91,94.56 -343.49,78.56 -221.14,65.91 -127.29,61.57 -17.73,56.66 -17.39,56.65">
+        <lane id="main_road_0" index="0" speed="27.77" length="426.24" shape="-441.45,94.82 -422.51,91.42 -343.98,75.39 -221.38,62.72 -127.44,58.37 -17.87,53.46 -17.64,53.46"/>
+        <lane id="main_road_1" index="1" speed="27.77" length="426.24" shape="-441.01,97.99 -421.91,94.56 -343.49,78.56 -221.14,65.91 -127.29,61.57 -17.73,56.66 -17.55,56.65"/>
+        <lane id="main_road_2" index="2" speed="27.77" length="426.24" shape="-440.56,101.16 -421.31,97.70 -343.00,81.73 -220.90,69.10 -127.14,64.77 -17.59,59.86 -17.45,59.85"/>
     </edge>
     <edge id="off_ramp" from="off_ramp_beginning" to="off_ramp_end" priority="-1" spreadType="roadCenter" shape="-376.19,73.97 -353.57,64.32 -334.01,53.54 -311.31,38.22 -291.71,15.41 -274.36,-8.78 -258.91,-38.06">
         <lane id="off_ramp_0" index="0" speed="13.89" length="161.26" shape="-374.56,68.06 -355.68,60.00 -336.52,49.44 -314.53,34.60 -295.49,12.44 -278.45,-11.31 -263.16,-40.30"/>
@@ -112,6 +109,11 @@
     <edge id="passage_area" from="ramp_meter" to="merge_beginning" priority="-1" spreadType="center" shape="-3.74,36.34 7.86,42.43 15.46,44.79 22.58,46.01 34.04,47.62 42.59,48.61 57.05,50.39 79.43,54.04">
         <lane id="passage_area_0" index="0" speed="13.89" length="42.51" shape="-3.74,36.34 7.86,42.43 15.46,44.79 22.58,46.01 34.04,47.62 36.67,47.93"/>
     </edge>
+    <edge id="vsl_zone" from="vsl_begin" to="merge_beginning" priority="-1" spreadType="center" shape="-17.39,56.65 14.14,55.87 46.00,55.42 79.43,54.04">
+        <lane id="vsl_zone_0" index="0" speed="27.77" length="61.79" shape="-17.32,53.45 14.08,52.67 44.40,52.24"/>
+        <lane id="vsl_zone_1" index="1" speed="27.77" length="61.79" shape="-17.24,56.65 14.14,55.87 44.54,55.44"/>
+        <lane id="vsl_zone_2" index="2" speed="27.77" length="61.79" shape="-17.16,59.85 14.20,59.07 44.67,58.64"/>
+    </edge>
 
     <tlLogic id="ramp_meter" type="static" programID="0" offset="0">
         <phase duration="5"  state="G"/>
@@ -126,7 +128,7 @@
         <request index="3" response="0000" foes="0000" cont="0"/>
     </junction>
     <junction id="higway_end" type="dead_end" x="457.90" y="74.20" incLanes="end_main_road_0 end_main_road_1 end_main_road_2" intLanes="" shape="458.15,69.41 457.65,78.99"/>
-    <junction id="merge_beginning" type="priority" x="79.43" y="54.04" incLanes="passage_area_0 main_road_0 main_road_1 main_road_2" intLanes=":merge_beginning_0_0 :merge_beginning_1_0 :merge_beginning_1_1 :merge_beginning_1_2" shape="57.64,59.85 57.99,47.05 53.50,46.98 50.17,47.01 47.43,47.04 44.70,47.00 41.39,46.80 36.93,46.34 36.42,49.51 39.31,49.85 41.57,50.13 43.20,50.35 44.21,50.51 44.59,50.60 44.34,50.64 44.73,60.24">
+    <junction id="merge_beginning" type="priority" x="79.43" y="54.04" incLanes="passage_area_0 vsl_zone_0 vsl_zone_1 vsl_zone_2" intLanes=":merge_beginning_0_0 :merge_beginning_1_0 :merge_beginning_1_1 :merge_beginning_1_2" shape="57.64,59.85 57.99,47.05 53.50,46.98 50.17,47.01 47.43,47.04 44.70,47.00 41.39,46.80 36.93,46.34 36.42,49.51 39.31,49.85 41.57,50.13 43.20,50.35 44.21,50.51 44.59,50.60 44.34,50.64 44.73,60.24">
         <request index="0" response="0000" foes="0000" cont="0"/>
         <request index="1" response="0000" foes="0000" cont="0"/>
         <request index="2" response="0000" foes="0000" cont="0"/>
@@ -152,6 +154,11 @@
     <junction id="ramp_meter" type="traffic_light" x="-3.74" y="36.34" incLanes="on_ramp_0" intLanes=":ramp_meter_0_0" shape="-4.40,37.80 -2.91,34.97 -3.01,34.91 -4.63,37.67">
         <request index="0" response="0" foes="0" cont="0"/>
     </junction>
+    <junction id="vsl_begin" type="priority" x="-17.39" y="56.65" incLanes="main_road_0 main_road_1 main_road_2" intLanes=":vsl_begin_0_0 :vsl_begin_0_1 :vsl_begin_0_2" shape="-17.12,61.44 -17.36,51.85 -17.69,51.86 -17.41,61.45">
+        <request index="0" response="000" foes="000" cont="0"/>
+        <request index="1" response="000" foes="000" cont="0"/>
+        <request index="2" response="000" foes="000" cont="0"/>
+    </junction>
 
     <connection from="acceleration_area" to="end_main_road" fromLane="1" toLane="0" via=":merge_end_0_0" dir="s" state="M"/>
     <connection from="acceleration_area" to="end_main_road" fromLane="2" toLane="1" via=":merge_end_0_1" dir="s" state="M"/>
@@ -160,9 +167,9 @@
     <connection from="entry" to="off_ramp_up_stream" fromLane="0" toLane="1" via=":off_up_stream_beginning_0_1" dir="s" state="M"/>
     <connection from="entry" to="off_ramp_up_stream" fromLane="1" toLane="2" via=":off_up_stream_beginning_0_2" dir="s" state="M"/>
     <connection from="entry" to="off_ramp_up_stream" fromLane="2" toLane="3" via=":off_up_stream_beginning_0_3" dir="s" state="M"/>
-    <connection from="main_road" to="acceleration_area" fromLane="0" toLane="1" via=":merge_beginning_1_0" dir="s" state="M"/>
-    <connection from="main_road" to="acceleration_area" fromLane="1" toLane="2" via=":merge_beginning_1_1" dir="s" state="M"/>
-    <connection from="main_road" to="acceleration_area" fromLane="2" toLane="3" via=":merge_beginning_1_2" dir="s" state="M"/>
+    <connection from="main_road" to="vsl_zone" fromLane="0" toLane="0" via=":vsl_begin_0_0" dir="s" state="M"/>
+    <connection from="main_road" to="vsl_zone" fromLane="1" toLane="1" via=":vsl_begin_0_1" dir="s" state="M"/>
+    <connection from="main_road" to="vsl_zone" fromLane="2" toLane="2" via=":vsl_begin_0_2" dir="s" state="M"/>
     <connection from="off_ramp_beginning" to="off_ramp" fromLane="0" toLane="0" via=":off_ramp_beginning_0_0" dir="s" state="M"/>
     <connection from="off_ramp_beginning" to="off_ramp" fromLane="0" toLane="1" via=":off_ramp_beginning_0_1" dir="s" state="M"/>
     <connection from="off_ramp_up_stream" to="off_ramp_beginning" fromLane="0" toLane="0" via=":highway_beginning_0_0" dir="R" state="M"/>
@@ -171,6 +178,9 @@
     <connection from="off_ramp_up_stream" to="main_road" fromLane="3" toLane="2" via=":highway_beginning_1_2" dir="s" state="M"/>
     <connection from="on_ramp" to="passage_area" fromLane="0" toLane="0" via=":ramp_meter_0_0" tl="ramp_meter" linkIndex="0" dir="s" state="O"/>
     <connection from="passage_area" to="acceleration_area" fromLane="0" toLane="0" via=":merge_beginning_0_0" dir="s" state="M"/>
+    <connection from="vsl_zone" to="acceleration_area" fromLane="0" toLane="1" via=":merge_beginning_1_0" dir="s" state="M"/>
+    <connection from="vsl_zone" to="acceleration_area" fromLane="1" toLane="2" via=":merge_beginning_1_1" dir="s" state="M"/>
+    <connection from="vsl_zone" to="acceleration_area" fromLane="2" toLane="3" via=":merge_beginning_1_2" dir="s" state="M"/>
 
     <connection from=":highway_beginning_0" to="off_ramp_beginning" fromLane="0" toLane="0" dir="R" state="M"/>
     <connection from=":highway_beginning_1" to="main_road" fromLane="0" toLane="0" dir="s" state="M"/>
@@ -190,5 +200,8 @@
     <connection from=":off_up_stream_beginning_0" to="off_ramp_up_stream" fromLane="2" toLane="2" dir="s" state="M"/>
     <connection from=":off_up_stream_beginning_0" to="off_ramp_up_stream" fromLane="3" toLane="3" dir="s" state="M"/>
     <connection from=":ramp_meter_0" to="passage_area" fromLane="0" toLane="0" dir="s" state="M"/>
+    <connection from=":vsl_begin_0" to="vsl_zone" fromLane="0" toLane="0" dir="s" state="M"/>
+    <connection from=":vsl_begin_0" to="vsl_zone" fromLane="1" toLane="1" dir="s" state="M"/>
+    <connection from=":vsl_begin_0" to="vsl_zone" fromLane="2" toLane="2" dir="s" state="M"/>
 
 </net>

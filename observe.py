@@ -68,6 +68,9 @@ class Observe(View):
     def setup(self):
         """Resets environment for new observation episode."""
         self.obs = self.env.reset()
+        self.ep_green_times = []
+        self.ep_lane_closed_count = 0
+        self.ep_rewards = []
 
     def close(self):
         """Closes the environment."""
@@ -82,12 +85,22 @@ class Observe(View):
         self.repeat += 1
 
         # Execute action in environment
-        self.obs, _, terminated, truncated, info = self.env.step(self.action)
+        self.obs, reward, terminated, truncated, info = self.env.step(self.action)
         # Check for episode termination
         done = terminated or truncated
 
-        # Log episode statistics        done = terminated or truncated
+        # Accumulate stats
+        if "chosen_green_time_sec" in info:
+            self.ep_green_times.append(info["chosen_green_time_sec"])
+        if info.get("lane_closed", 0) == 1:
+            self.ep_lane_closed_count += 1
 
+        # 'reward' here might be None from step, but it's typically a float.
+        # Alternatively we can use info.get("reward", 0.0) if it's there.
+        # But 'reward' is returned from step.
+        self.ep_rewards.append(reward if reward is not None else 0.0)
+
+        # Log episode statistics
         self.env.log_info_writer(info, done, *self.log)
 
         # to fix additional episode at the end
@@ -99,6 +112,17 @@ class Observe(View):
             print("Episode :", self.ep)
             # You can still print the info from the episode that just finished
             [print(k, ":", info[k]) for k in info]
+
+            print("\n--- Episode Statistics ---")
+            avg_green = np.mean(self.ep_green_times) if self.ep_green_times else 0.0
+            print(f"Average Green Time: {avg_green:.2f} sec")
+            print(f"Lane Closed Count: {self.ep_lane_closed_count} times")
+            total_reward = info.get(
+                "r", np.sum(self.ep_rewards)
+            )  # Use accumulated episode reward from Monitor if available
+            print(f"Total Episode Reward: {total_reward:.2f}")
+            print(f"Average Step Reward: {np.mean(self.ep_rewards):.2f}")
+            print("--------------------------\n")
 
             # Check if we should exit BEFORE resetting the environment
             if bool(self.max_episodes) and self.ep >= self.max_episodes:
@@ -113,8 +137,10 @@ class Observe(View):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OBSERVE")
+
     def str2bool(v):
         return v.lower() in ("yes", "y", "true", "t", "1")
+
     parser.add_argument("-d", type=str, default="", help="Directory", required=True)
     parser.add_argument("-gpu", type=str, default="0", help="GPU #")
     parser.add_argument(

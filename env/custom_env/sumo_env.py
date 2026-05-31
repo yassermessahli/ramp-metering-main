@@ -108,7 +108,9 @@ class SumoEnv:
 
     def set_params(self):
         sumocfg_path = self.data_dir + self.config + ".sumocfg"
-        emission_xml_path = os.path.join(os.path.dirname(self.data_dir), "emissions.xml")
+        emission_xml_path = os.path.join(
+            os.path.dirname(self.data_dir), "emissions.xml"
+        )
         sumo_seed = os.environ.get("SUMO_EVAL_SEED")
         sumo_log_file = os.environ.get("SUMO_EVAL_LOG_FILE")
         sumo_tripinfo_file = os.environ.get("SUMO_TRIPINFO_FILE")
@@ -153,7 +155,9 @@ class SumoEnv:
                 "--quit-on-end",
                 "true",
             ]
-            gui_settings_file = self.SUMO_ENV + "data/" + self.config + "/gui-settings.cfg"
+            gui_settings_file = (
+                self.SUMO_ENV + "data/" + self.config + "/gui-settings.cfg"
+            )
             if os.path.exists(gui_settings_file):
                 params.append("--gui-settings-file")
                 params.append(gui_settings_file)
@@ -185,7 +189,9 @@ class SumoEnv:
                     internal_lane_id = conn._via
                     to_lane_obj = conn._toLane
                     if internal_lane_id and to_lane_obj:
-                        self.internal_to_destination_map[internal_lane_id] = to_lane_obj.getID()
+                        self.internal_to_destination_map[internal_lane_id] = (
+                            to_lane_obj.getID()
+                        )
         except AttributeError:
             print("--- FATAL ERROR: Could not read connections from network file. ---")
             sys.exit(1)
@@ -196,14 +202,18 @@ class SumoEnv:
         print("-------------------------\n")
 
     def _create_grid_observation(self):
-        grid = np.zeros((self.grid_rows, self.grid_cols, self.grid_channels), dtype=np.float32)
+        grid = np.zeros(
+            (self.grid_rows, self.grid_cols, self.grid_channels), dtype=np.float32
+        )
         try:
             all_veh_data = traci.vehicle.getSubscriptionResults(None)
         except traci.TraCIException:
             return grid
 
         v_type_con = self.args.get("v_type_con", "con")
-        freeflow_speed = self.FREEFLOW_SPEED_MPS if self.FREEFLOW_SPEED_MPS > 0 else 35.0
+        freeflow_speed = (
+            self.FREEFLOW_SPEED_MPS if self.FREEFLOW_SPEED_MPS > 0 else 35.0
+        )
 
         column_map = {
             "main_road_2": 0,
@@ -224,7 +234,9 @@ class SumoEnv:
             original_lane_id = data.get(tc.VAR_LANE_ID)
             lane_pos = data.get(tc.VAR_LANEPOSITION)
 
-            lane_id = self.internal_to_destination_map.get(original_lane_id, original_lane_id)
+            lane_id = self.internal_to_destination_map.get(
+                original_lane_id, original_lane_id
+            )
             if original_lane_id.startswith(":"):
                 lane_pos = 0.0
 
@@ -248,7 +260,9 @@ class SumoEnv:
             elif "acceleration_area" in lane_id:
                 if lane_pos < self.accel_segment_len:
                     if lane_id == "acceleration_area_0":
-                        preceding_path_len = self.on_ramp_segment_len + self.passage_segment_len
+                        preceding_path_len = (
+                            self.on_ramp_segment_len + self.passage_segment_len
+                        )
                     else:
                         preceding_path_len = self.main_road_segment_len
                     dist_from_grid_start = preceding_path_len + lane_pos
@@ -393,7 +407,11 @@ class SumoEnv:
         except traci.TraCIException:
             print("Warning: SumoEnv - Could not get induction loop ID list.")
             return []
-        return [loop_id for loop_id in all_loops if traci.inductionloop.getLaneID(loop_id) in lanes]
+        return [
+            loop_id
+            for loop_id in all_loops
+            if traci.inductionloop.getLaneID(loop_id) in lanes
+        ]
 
     def get_loops_flow_interval(self, loop_ids, interval_duration_sec):
         if not loop_ids or interval_duration_sec <= 0:
@@ -402,13 +420,19 @@ class SumoEnv:
         valid_loops = 0
         for loop_id in loop_ids:
             try:
-                total_vehicles += traci.inductionloop.getLastIntervalVehicleNumber(loop_id)
+                total_vehicles += traci.inductionloop.getLastIntervalVehicleNumber(
+                    loop_id
+                )
                 valid_loops += 1
             except traci.TraCIException:
                 print(
                     f"Warning: SumoEnv - Could not get interval vehicle number for loop {loop_id}"
                 )
-        return (total_vehicles * 3600.0) / interval_duration_sec if valid_loops > 0 else 0.0
+        return (
+            (total_vehicles * 3600.0) / interval_duration_sec
+            if valid_loops > 0
+            else 0.0
+        )
 
     def get_edge_flow_from_loops_interval(self, edge_id, interval_duration_sec):
         loops = self.get_edge_induction_loops(edge_id)
@@ -424,7 +448,9 @@ class SumoEnv:
                 total_occupancy += traci.inductionloop.getLastIntervalOccupancy(loop_id)
                 valid_loops += 1
             except traci.TraCIException:
-                print(f"Warning: SumoEnv - Could not get interval occupancy for loop {loop_id}")
+                print(
+                    f"Warning: SumoEnv - Could not get interval occupancy for loop {loop_id}"
+                )
         return total_occupancy / valid_loops if valid_loops > 0 else 0.0
 
     def get_edge_occupancy_from_loops_interval(self, edge_id):
@@ -443,7 +469,9 @@ class SumoEnv:
                     total_speed += speed
                     valid_loops += 1
             except traci.TraCIException:
-                print(f"Warning: SumoEnv - Could not get interval mean speed for loop {loop_id}")
+                print(
+                    f"Warning: SumoEnv - Could not get interval mean speed for loop {loop_id}"
+                )
         return total_speed / valid_loops if valid_loops > 0 else 0.0
 
     def get_edge_mean_speed_from_loops_interval(self, edge_id):
@@ -483,7 +511,9 @@ class SumoEnv:
             try:
                 return traci.laneareadetector.getLastStepVehicleNumber(detector_id)
             except traci.TraCIException:
-                print(f"Warning: SumoEnv - Could not get vehicles for detector {detector_id}")
+                print(
+                    f"Warning: SumoEnv - Could not get vehicles for detector {detector_id}"
+                )
                 return 0
 
     def get_veh_speed(self, veh_id):
@@ -517,13 +547,16 @@ class SumoEnv:
 
     def _generate_route_file(self):
         main_flow = random.choices(
-            self.args["veh_per_hour_main"], weights=self.args["veh_per_hour_main_weights"]
+            self.args["veh_per_hour_main"],
+            weights=self.args["veh_per_hour_main_weights"],
         )[0]
         on_ramp_flow = random.choices(
-            self.args["veh_per_hour_on_ramp"], weights=self.args["veh_per_hour_on_ramp_weights"]
+            self.args["veh_per_hour_on_ramp"],
+            weights=self.args["veh_per_hour_on_ramp_weights"],
         )[0]
         off_ramp_flow = random.choices(
-            self.args["veh_per_hour_off_ramp"], weights=self.args["veh_per_hour_off_ramp_weights"]
+            self.args["veh_per_hour_off_ramp"],
+            weights=self.args["veh_per_hour_off_ramp_weights"],
         )[0]
 
         min_pen, max_pen = self.args["con_penetration_rate_range"]
@@ -547,7 +580,7 @@ class SumoEnv:
         <vType id=\"def\" vClass=\"passenger\" length=\"5.0\" minGap=\"2.5\" accel=\"2.6\" decel=\"4.5\" maxSpeed=\"35\" sigma=\"0.9\" />
         <vType id=\"con\" vClass=\"passenger\" length=\"5.0\" minGap=\"2.5\" accel=\"2.6\" decel=\"4.5\" maxSpeed=\"35\" sigma=\"0.8\" color=\"1,0,0\" />
 
-        <route id=\"entry_to_end_main_road\" edges=\"entry off_ramp_up_stream main_road acceleration_area end_main_road\" />
+        <route id=\"entry_to_end_main_road\" edges=\"entry off_ramp_up_stream main_road vsl_zone acceleration_area end_main_road\" />
         <route id=\"entry_to_off_ramp\" edges=\"entry off_ramp_up_stream off_ramp_beginning off_ramp\" />
         <route id=\"on_ramp_to_end_main_road\" edges=\"on_ramp passage_area acceleration_area end_main_road\" />
 
@@ -581,7 +614,8 @@ class SumoEnv:
         try:
             if self.args.get("log_overall_metrics", True):
                 log_data["total_running_vehicles"] = (
-                    traci.simulation.getDepartedNumber() - traci.simulation.getArrivedNumber()
+                    traci.simulation.getDepartedNumber()
+                    - traci.simulation.getArrivedNumber()
                 )
                 log_data["total_departed"] = traci.simulation.getDepartedNumber()
                 log_data["total_arrived"] = traci.simulation.getArrivedNumber()

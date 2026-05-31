@@ -17,12 +17,12 @@
     <inductionLoop id="passage_queue_sens" lane="passage_area_0" pos="10.69" period="40.00" file="induction_loop_data/passage_queue_sens.xml"/>
     <inductionLoop id="passage_sens" lane="passage_area_0" pos="6.04" period="40.00" file="induction_loop_data/passage_sens.xml"/>
     <inductionLoop id="queue_sens" lane="on_ramp_0" pos="6.04" period="40.00" file="induction_loop_data/queue_sens.xml"/>
-    <inductionLoop id="up_stream_sens_0" lane="main_road_0" pos="453.40" period="40.00" file="induction_loop_data/up_stream_sens_0.xml"/>
-    <inductionLoop id="up_stream_sens_00" lane="main_road_0" pos="445.61" period="40.00" file="induction_loop_data/up_stream_sens_00.xml"/>
-    <inductionLoop id="up_stream_sens_1" lane="main_road_1" pos="453.22" period="40.00" file="induction_loop_data/up_stream_sens_1.xml"/>
-    <inductionLoop id="up_stream_sens_11" lane="main_road_1" pos="445.27" period="40.00" file="induction_loop_data/up_stream_sens_11.xml"/>
-    <inductionLoop id="up_stream_sens_2" lane="main_road_2" pos="453.23" period="40.00" file="induction_loop_data/up_stream_sens_2.xml"/>
-    <inductionLoop id="up_stream_sens_22" lane="main_road_2" pos="445.05" period="40.00" file="induction_loop_data/up_stream_sens_22.xml"/>
+    <inductionLoop id="up_stream_sens_0" lane="main_road_0" pos="391.00" period="40.00" file="induction_loop_data/up_stream_sens_0.xml"/>
+    <inductionLoop id="up_stream_sens_00" lane="main_road_0" pos="383.00" period="40.00" file="induction_loop_data/up_stream_sens_00.xml"/>
+    <inductionLoop id="up_stream_sens_1" lane="main_road_1" pos="391.00" period="40.00" file="induction_loop_data/up_stream_sens_1.xml"/>
+    <inductionLoop id="up_stream_sens_11" lane="main_road_1" pos="383.00" period="40.00" file="induction_loop_data/up_stream_sens_11.xml"/>
+    <inductionLoop id="up_stream_sens_2" lane="main_road_2" pos="391.00" period="40.00" file="induction_loop_data/up_stream_sens_2.xml"/>
+    <inductionLoop id="up_stream_sens_22" lane="main_road_2" pos="383.00" period="40.00" file="induction_loop_data/up_stream_sens_22.xml"/>
 
 
 

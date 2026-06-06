@@ -2,36 +2,26 @@ import random
 
 import numpy as np
 import traci
-from traci import constants as tc
+from colorama import Fore
 
 from ..sumo_env import SumoEnv
 
 
 class RLController(SumoEnv):
-    """Variant: joint ramp metering + CAV lane-change control (RM+LCC).
+    """Variant: joint ramp metering + network-level lane control via setAllowed.
 
     Action space is 16 = 8 green-time choices x 2 lane states.
         green_idx = action % 8   -> green time in {5,10,...,40} s
         lane_idx  = action // 8  -> 0 = lane open, 1 = lane closed
 
-    Lane closure is implemented via explicit per-vehicle changeLane commands
-    issued to all CAV vehicles within LCC_WARNING_DIST_M metres of the end of
-    main_road_0. A setDisallow call on vsl_zone_0 acts as a safety net for
-    any vehicles that slip through the warning zone.
-
-    Compliance rate is configurable via SUMO_PARAMS["lcc_compliance_rate"].
+    Lane closure is implemented via traci.lane.setAllowed(vsl_zone_0, ["custom1"]).
+    On-ramp vehicles are assigned vClass="custom1" so they are unaffected.
+    Mainline vehicles (vClass="passenger") detect the restriction from far upstream
+    and re-route to vsl_zone_1/2 autonomously via SUMO's LC2013 model.
+    One API call per RL cycle replaces the per-vehicle changeLane loop.
     """
 
-    # Controlled segment
-    CONTROLLED_LANE_ID = "vsl_zone_0"  # setDisallow target (safety net)
-    WARNING_LANE_ID = "main_road_0"  # lane where changeLane commands are issued
-    WARNING_LANE_LEN_M = 426.24  # length of main_road_0 (from net.xml)
-
-    # LCC command parameters
-    LCC_WARNING_DIST_M = (
-        350.0  # distance upstream of lane end to start issuing commands
-    )
-    LCC_CHANGE_DURATION_SEC = 30.0  # changeLane persistence duration (seconds)
+    CONTROLLED_LANE_ID = "vsl_zone_0"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -79,9 +69,6 @@ class RLController(SumoEnv):
 
         self.last_action_value_sec = self.green_time_actions_sec[0]
         self.last_lane_action = 0  # 0=open, 1=closed
-
-        # Compliance rate: fraction of CAVs that obey the LCC command
-        self.LCC_COMPLIANCE_RATE = self.args.get("lcc_compliance_rate", 1.0)
 
         self._reset_cycle_aggregators()
 
@@ -148,38 +135,18 @@ class RLController(SumoEnv):
         self.sum_queue = 0
         self.current_ramp_queue_veh = 0
 
-    def _enforce_lcc(self):
-        """Issue changeLane commands to CAVs in the warning zone.
+    def _apply_lane_control(self, lane_idx):
+        """Open or close vsl_zone_0 to mainline traffic via setAllowed.
 
-        Called every simulation step while the lane closure action is active.
-        Targets vehicles on WARNING_LANE_ID within LCC_WARNING_DIST_M of the
-        lane end, and any that have already entered CONTROLLED_LANE_ID.
+        lane_idx=1: allow only custom1 (on-ramp vClass) → effective no-entry for mainline.
+        lane_idx=0: allow all classes → lane open.
+        Called once per RL cycle and on reset.
         """
-        all_veh_data = traci.vehicle.getSubscriptionResults(None)
-        if not all_veh_data:
-            return
-
-        v_type_con = self.args.get("v_type_con", "con")
-        warning_start = self.WARNING_LANE_LEN_M - self.LCC_WARNING_DIST_M
-
-        for veh_id, data in all_veh_data.items():
-            if data.get(tc.VAR_TYPE) != v_type_con:
-                continue
-            if random.random() >= self.LCC_COMPLIANCE_RATE:
-                continue
-
-            raw_lane = data.get(tc.VAR_LANE_ID, "")
-            lane_id = self.internal_to_destination_map.get(raw_lane, raw_lane)
-            lane_pos = data.get(tc.VAR_LANEPOSITION, 0)
-
-            if lane_id == self.WARNING_LANE_ID and lane_pos >= warning_start:
-                # Skip if already executing a lane change to the right
-                if traci.vehicle.getLaneChangeState(veh_id, -1)[0] == 0:
-                    traci.vehicle.changeLane(veh_id, 1, self.LCC_CHANGE_DURATION_SEC)
-            elif lane_id == self.CONTROLLED_LANE_ID:
-                # Already in the zone: push to vsl_zone_1
-                if traci.vehicle.getLaneChangeState(veh_id, -1)[0] == 0:
-                    traci.vehicle.changeLane(veh_id, 1, self.LCC_CHANGE_DURATION_SEC)
+        if lane_idx == 1:
+            traci.lane.setAllowed(self.CONTROLLED_LANE_ID, ["custom1"])
+        else:
+            traci.lane.setAllowed(self.CONTROLLED_LANE_ID, [])
+        self._update_lane_indicator(lane_idx)
 
     def _update_lane_indicator(self, lane_idx):
         """Create or update a POI flag at the start of vsl_zone_0 showing lane state.
@@ -205,6 +172,72 @@ class RLController(SumoEnv):
             )
         color = (255, 0, 0, 255) if lane_idx == 1 else (0, 255, 0, 255)
         traci.poi.setColor(poi_id, color)
+
+    def _generate_route_file(self):
+        """Override to assign vClass='custom1' to on-ramp vehicle types.
+
+        Mainline vehicles keep vClass='passenger' so setAllowed("custom1") blocks them.
+        On-ramp vehicles (def_ramp / con_ramp) use custom1 and pass through unaffected.
+        """
+        main_flow = random.choices(
+            self.args["veh_per_hour_main"],
+            weights=self.args["veh_per_hour_main_weights"],
+        )[0]
+        on_ramp_flow = random.choices(
+            self.args["veh_per_hour_on_ramp"],
+            weights=self.args["veh_per_hour_on_ramp_weights"],
+        )[0]
+        off_ramp_flow = random.choices(
+            self.args["veh_per_hour_off_ramp"],
+            weights=self.args["veh_per_hour_off_ramp_weights"],
+        )[0]
+
+        min_pen, max_pen = self.args["con_penetration_rate_range"]
+        pen_rate = random.uniform(min_pen, max_pen)
+
+        self.main_flow_vph = main_flow
+        self.on_ramp_flow_vph = on_ramp_flow
+        self.off_ramp_flow_vph = off_ramp_flow
+        self.pen_rate = pen_rate
+
+        main_con = int(main_flow - 1)
+        main_def = 1
+        on_ramp_con = int(on_ramp_flow - 1)
+        on_ramp_def = 1
+        off_ramp_con = int(off_ramp_flow - 1)
+        off_ramp_def = 1
+
+        xml_content = f"""<!-- Generated on-the-fly for episode {self.ep_count + 1} -->
+    <routes xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://sumo.dlr.de/xsd/routes_file.xsd\">
+
+        <vType id=\"def\"      vClass=\"passenger\" length=\"5.0\" minGap=\"2.5\" accel=\"2.6\" decel=\"4.5\" maxSpeed=\"35\" sigma=\"0.9\" />
+        <vType id=\"con\"      vClass=\"passenger\" length=\"5.0\" minGap=\"2.5\" accel=\"2.6\" decel=\"4.5\" maxSpeed=\"35\" sigma=\"0.8\" color=\"1,0,0\" />
+        <vType id=\"def_ramp\" vClass=\"custom1\"   length=\"5.0\" minGap=\"2.5\" accel=\"2.6\" decel=\"4.5\" maxSpeed=\"35\" sigma=\"0.9\" />
+        <vType id=\"con_ramp\" vClass=\"custom1\"   length=\"5.0\" minGap=\"2.5\" accel=\"2.6\" decel=\"4.5\" maxSpeed=\"35\" sigma=\"0.8\" color=\"0,0,1\" />
+
+        <route id=\"entry_to_end_main_road\" edges=\"entry off_ramp_up_stream main_road vsl_zone acceleration_area end_main_road\" />
+        <route id=\"entry_to_off_ramp\" edges=\"entry off_ramp_up_stream off_ramp_beginning off_ramp\" />
+        <route id=\"on_ramp_to_end_main_road\" edges=\"on_ramp passage_area acceleration_area end_main_road\" />
+
+        <flow id=\"main_con\"     type=\"con\"      vehsPerHour=\"{main_con}\"     route=\"entry_to_end_main_road\"   begin=\"0\" end=\"{self.args["steps"]}\" departLane=\"best\" departPos=\"random\" departSpeed=\"max\" />
+        <flow id=\"main_def\"     type=\"def\"      vehsPerHour=\"{main_def}\"     route=\"entry_to_end_main_road\"   begin=\"0\" end=\"{self.args["steps"]}\" departLane=\"best\" departPos=\"random\" departSpeed=\"max\" />
+        <flow id=\"on_ramp_con\"  type=\"con_ramp\" vehsPerHour=\"{on_ramp_con}\"  route=\"on_ramp_to_end_main_road\" begin=\"0\" end=\"{self.args["steps"]}\" departLane=\"best\" departPos=\"random\" departSpeed=\"max\" />
+        <flow id=\"on_ramp_def\"  type=\"def_ramp\" vehsPerHour=\"{on_ramp_def}\"  route=\"on_ramp_to_end_main_road\" begin=\"0\" end=\"{self.args["steps"]}\" departLane=\"best\" departPos=\"random\" departSpeed=\"max\" />
+        <flow id=\"off_ramp_con\" type=\"con\"      vehsPerHour=\"{off_ramp_con}\" route=\"entry_to_off_ramp\"        begin=\"0\" end=\"{self.args["steps"]}\" departLane=\"best\" departPos=\"random\" departSpeed=\"max\" />
+        <flow id=\"off_ramp_def\" type=\"def\"      vehsPerHour=\"{off_ramp_def}\" route=\"entry_to_off_ramp\"        begin=\"0\" end=\"{self.args["steps"]}\" departLane=\"best\" departPos=\"random\" departSpeed=\"max\" />
+
+    </routes>
+    """
+
+        route_file_path = self.data_dir + self.config + ".rou.xml"
+        with open(route_file_path, "w") as f:
+            f.write(xml_content)
+
+        print(
+            Fore.LIGHTMAGENTA_EX,
+            f"Generated new route file for Ep {self.ep_count + 1}: Main={main_flow}, Ramp={on_ramp_flow}, PenRate={pen_rate:.2f}",
+            Fore.RESET,
+        )
 
     def _collect_data_at_cycle_end(self):
         self.processed_flow_upstream_vph = self.get_loops_flow_interval(
@@ -290,7 +323,7 @@ class RLController(SumoEnv):
             self.simulation_step()
 
         self._collect_data_at_cycle_end()
-        self._update_lane_indicator(0)
+        self._apply_lane_control(0)
 
         current_phase_index_init = -1
         current_ryg_state_init = "N/A"
@@ -329,18 +362,18 @@ class RLController(SumoEnv):
 
         green_idx = int(action_index) % len(self.green_time_actions_sec)
         lane_idx = int(action_index) // len(self.green_time_actions_sec)
-        lane_idx = 1  # for debug only
+        lane_idx = 
         chosen_green_time_sec = self.green_time_actions_sec[green_idx]
+        red_time_sec = self.CYCLE_DURATION_SEC - chosen_green_time_sec
         self.last_action_value_sec = chosen_green_time_sec
         self.last_lane_action = lane_idx
-        self._update_lane_indicator(lane_idx)
 
-        red_time_sec = self.CYCLE_DURATION_SEC - chosen_green_time_sec
-        if red_time_sec < 0:
-            red_time_sec = 0.0
+        # Apply lane control once per cycle before the green phase starts
+        self._apply_lane_control(lane_idx)
 
         self._reset_cycle_aggregators()
 
+        # Apply green phase first
         if (
             self.ramp_meter_id
             and self.green_phase_index != -1
@@ -362,9 +395,8 @@ class RLController(SumoEnv):
                 self.sum_queue += self.get_edge_ls_queue_length_vehicles(
                     self.ON_RAMP_EDGE
                 )
-                if lane_idx == 1:
-                    self._enforce_lcc()
 
+        # Apply red phase next
         if self.ramp_meter_id and self.red_phase_index != -1 and red_time_sec > 0:
             self.set_phase(self.ramp_meter_id, self.red_phase_index)
             self.set_phase_duration(self.ramp_meter_id, red_time_sec)
@@ -380,8 +412,6 @@ class RLController(SumoEnv):
                 self.sum_queue += self.get_edge_ls_queue_length_vehicles(
                     self.ON_RAMP_EDGE
                 )
-                if lane_idx == 1:
-                    self._enforce_lcc()
 
         self._collect_data_at_cycle_end()
 

@@ -17,6 +17,7 @@ dependencies = [
     "sumolib==1.26.0",
     "traci==1.26.0",
     "setuptools>=65.5.1,<82",
+    "eclipse-sumo>=1.27.0",
 ]
 
 [project.optional-dependencies]

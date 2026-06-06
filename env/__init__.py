@@ -1,7 +1,7 @@
-# Active variant: joint ramp metering + CAV lane-change control (16-action).
-# To revert to the previous variant, swap this import for:
-#     from .custom_env.lane_control_macro_only.dqn_config import HYPER_PARAMS, network_config
-from .custom_env.rm_lcc_macro_with_changeLane.dqn_config import (
+# Active variant: joint ramp metering + setAllowed-based lane control (16-action).
+# To revert to the changeLane variant, swap this import for:
+#     from .custom_env.rm_lcc_macro_with_changeLane.dqn_config import HYPER_PARAMS, network_config
+from .custom_env.rm_lcc_macro_with_setAllowed.dqn_config import (
     HYPER_PARAMS,
     network_config,
 )

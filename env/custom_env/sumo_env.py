@@ -1,3 +1,5 @@
+# sumo_env.py - Core SUMO environment with core TraCI calls
+
 import json
 import os
 import random
@@ -6,22 +8,12 @@ import sys
 import threading
 
 import numpy as np
+import traci  # noqa
 from colorama import Fore
+from sumolib import net  # noqa
+from traci import constants as tc
 
 from .utils import SUMO_PARAMS
-
-SUMO_HOME = "../sumo/"
-if SUMO_HOME not in sys.path:
-    sys.path.append(SUMO_HOME + "tools")
-
-try:
-    from sumolib import net  # noqa
-    import traci  # noqa
-    from traci import constants as tc
-except ImportError:
-    sys.exit(
-        "Please declare the SUMO_HOME environment variable or ensure 'sumo/tools' is in sys.path."
-    )
 
 
 class SumoEnv:
@@ -227,7 +219,7 @@ class SumoEnv:
             "passage_area_0": 4,
         }
 
-        for veh_id, data in all_veh_data.items():
+        for _veh_id, data in all_veh_data.items():
             if data.get(tc.VAR_TYPE) != v_type_con:
                 continue
 
@@ -289,12 +281,8 @@ class SumoEnv:
             )
 
     def start(self):
-        try:
-            traci.start(self.params)
-            self.sim_step_length = traci.simulation.getDeltaT()
-        except traci.TraCIException as e:
-            print(f"Error starting TraCI during explicit start(): {e}")
-            sys.exit(1)
+        traci.start(self.params)
+        self.sim_step_length = traci.simulation.getDeltaT()
 
     def stop(self, timeout=5.0):
         """Closes the TraCI connection with a timeout to prevent hanging.
@@ -304,10 +292,7 @@ class SumoEnv:
         """
 
         def close_traci():
-            try:
-                traci.close()
-            except (traci.TraCIException, Exception):
-                pass
+            traci.close()
 
         # Try to close TraCI with a timeout
         close_thread = threading.Thread(target=close_traci, daemon=True)
@@ -316,10 +301,7 @@ class SumoEnv:
 
         # If thread is still alive after timeout, force kill SUMO processes
         if close_thread.is_alive():
-            try:
-                subprocess.run(["pkill", "-9", "-f", "sumo"], timeout=1)
-            except Exception:
-                pass
+            subprocess.run(["pkill", "-9", "-f", "sumo"], timeout=1)
 
         sys.stdout.flush()
 
@@ -336,12 +318,8 @@ class SumoEnv:
         self.start()
 
     def simulation_step(self):
-        try:
-            traci.simulationStep()
-            self._subscribe_to_vehicles()
-        except traci.TraCIException as e:
-            print(f"Error during simulation step: {e}. SUMO may have closed.")
-            raise e
+        traci.simulationStep()
+        self._subscribe_to_vehicles()
 
     def reset(self):
         raise NotImplementedError

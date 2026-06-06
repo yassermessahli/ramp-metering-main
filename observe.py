@@ -16,6 +16,12 @@ class Observe(View):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
+        # Set SUMO seed before SUMO starts (read by sumo_env.set_params())
+        if args.seed >= 0:
+            os.environ["SUMO_EVAL_SEED"] = str(args.seed)
+        elif "SUMO_EVAL_SEED" in os.environ:
+            del os.environ["SUMO_EVAL_SEED"]
+
         # Determine GUI override from args if present
         gui_override = None
         if hasattr(args, "headless") and args.headless:
@@ -143,6 +149,9 @@ if __name__ == "__main__":
 
     parser.add_argument("-d", type=str, default="", help="Directory", required=True)
     parser.add_argument("-gpu", type=str, default="0", help="GPU #")
+    parser.add_argument(
+        "-seed", type=int, default=-1, help="SUMO random seed (-1 = random)"
+    )
     parser.add_argument(
         "-max_s", type=int, default=0, help="Max steps per episode if > 0, else inf"
     )

@@ -1,8 +1,45 @@
-# CLAUDE.md — Project Context for AI Assistants
+# CLAUDE.md
 
-> This file provides essential project context for AI coding assistants working on this codebase.
-> It avoids redundancy by summarizing the architecture, conventions, and key details
-> so that every session starts with a shared understanding.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## Commands
+
+```bash
+# Install dependencies
+uv sync
+
+# Install with analysis extras (Jupyter, Matplotlib, etc.)
+uv sync --extra analysis
+
+# Lint (auto-fix safe issues)
+uv run ruff check --fix .
+
+# Format
+uv run ruff format .
+
+# Lint + format in one go
+uv run ruff check --fix . && uv run ruff format .
+
+# Lint with unsafe fixes
+uv run ruff check --fix --unsafe-fixes .
+
+# Training
+uv run python train.py
+uv run python train.py --load True     # resume from checkpoint
+uv run python train.py --gui True      # with SUMO GUI
+
+# Baselines / inference / evaluation
+uv run python play.py --strategy AlwaysGreen
+uv run python observe.py --load <path>
+uv run python evaluate.py
+
+# TensorBoard
+uv run tensorboard --logdir logs/train/1ramp_1x3/
+```
+
+> No automated tests exist in this project (see Known Issues).
 
 ---
 
@@ -37,7 +74,7 @@ The agent is trained and evaluated in **SUMO** (Simulation of Urban MObility) vi
 
 ## Directory Structure
 
-```
+```text
 .
 ├── train.py                 # Training entry point
 ├── play.py                  # Run baselines or human-play mode
@@ -96,7 +133,7 @@ The agent is trained and evaluated in **SUMO** (Simulation of Urban MObility) vi
 
 ### Environment Stack (bottom → top)
 
-```
+```text
 SumoEnv          ← TraCI lifecycle, detector queries, route generation, vehicle subscriptions
     ↑
 RLController     ← State construction (macro + micro grid), action execution (green/red phases), reward
@@ -110,7 +147,7 @@ DummyVecEnv      ← Vectorized env wrapper (always n_env=1)
 
 ### Agent Hierarchy
 
-```
+```text
 Agent (abstract)
 ├── SimpleAgent          → DQNAgent (vanilla DQN)
 ├── DoubleAgent          → DoubleDQNAgent, DuelingDoubleDQNAgent  ← ACTIVE
@@ -159,7 +196,7 @@ Agent (abstract)
 
 Weighted multi-objective: speed rewards (positive) + occupancy/queue penalties (negative).
 
-```
+```text
 reward = 1.5 × r_speed_merge      (+)
        + 1.0 × r_speed_upstream   (+)
        + 0.5 × r_speed_downstream (+)
@@ -260,3 +297,99 @@ The hybrid state includes a spatial grid populated by connected vehicle position
 ---
 
 _This file is intended for AI assistant context. See `README.md` for the full technical analysis._
+
+## How the Two Packages Work Together
+
+### The Full Data Flow (One Training Step)
+
+```text
+train.py
+  └─ DummyVecEnv.step(action)
+       └─ Monitor → CustomEnvWrapper.step(action)   [Gymnasium API]
+           └─ DqnEnv.step(action)                   [thin adapter — just delegates]
+               └─ RLController.step(action)         [REAL work happens here]
+                   └─ SumoEnv.*                     [TraCI calls]
+
+```
+
+---
+
+### The Environment Package (`env/`)
+
+- **`env/custom_env/utils.py`:** The root config dictionary `SUMO_PARAMS`. Everything else reads from here: network shape, demand distributions, cycle timing, grid dimensions. Change one value here and it ripples everywhere.
+- **`env/custom_env/sumo_env.py` (`SumoEnv`):** Owns the SUMO process. Responsibilities include:
+- Launches/kills the `traci` subprocess on `__init__` and on every `simulation_reset()`.
+- Builds the `internal_to_destination_map` from the network file (maps internal junction lanes → destination lanes, used by the micro grid).
+- Provides all detector query helpers: `get_loops_flow_interval`, `get_loops_occupancy_interval`, `get_loops_flow_weigthed_mean_speed`, etc.
+- Generates the `.rou.xml` route file each episode (stochastic demand).
+- Abstract methods `reset()`, `step()`, `obs()`, `rew()`, `done()` — must be implemented by subclasses.
+
+- **`env/custom_env/rl_controller.py` (`RLController(SumoEnv)`):** The RL brain. Responsibilities include:
+- `step(action_index)`: Translates an integer action (0–7) → green time (5–40s) → runs sim steps for green phase, then red phase, accumulating queue samples via `sum_queue`.
+- `_collect_data_at_cycle_end()`: Reads all detectors once per cycle into `self.processed_*` attributes.
+- `_get_current_observation()`: Builds the 284-d state — 14 macro floats (normalized flows/speeds/occupancies/queue/last action) concatenated with 270-d flattened grid.
+- `_calculate_reward()`: Weighs 7 components with hardcoded weights.
+- `reset()`: Calls `simulation_reset()`, runs 5 warm-up steps, collects initial data.
+- **Note:** This is the file you touch to change state features, action space, and reward weights.
+
+- **`env/dqn_env.py` (`DqnEnv`):** A thin adapter. Its only real job is to instantiate the right `RLController` or `Baselines.*` depending on mode (train/observe/play) and to expose `action_space_n` and `observation_space_n` to the layer above. The `obs()`, `rew()`, `step()`, `reset()` methods just delegate 1:1 to `sumo_env`. There is no logic here.
+- **`env/dqn_config.py`:** Two things in one file:
+- `HYPER_PARAMS` dict: All training hyperparameters.
+- `TwoStreamHybridNetwork` class + `network_config()` factory function: The active network architecture. This is not in `dqn/network.py`; it lives here so you can swap architectures by swapping config files. `network_config` is passed as `nn_conf_func` to the agent and returns `(net, fc_out_dim, optimizer_class, loss_class)`.
+
+---
+
+### The Agent Package (`dqn/`)
+
+- **`dqn/env_wrap.py` (`CustomEnvWrapper(gym.Env)`):** Wraps `DqnEnv` to comply with Gymnasium's `reset() → (obs, info)` and `step() → (obs, rew, terminated, truncated, info)` API. Also has `log_info_writer()` for CSV logging during evaluation.
+- **`dqn/env_make.py` (`make_env`):** Applies optional wrappers: `RepeatActionWrapper`, `MaxEpisodeStepsWrapper`, `DummyVecEnv`. Always returns a vectorized env (`n_env=1` uses `DummyVecEnv`).
+- **`dqn/network.py` (`DeepQNetwork`, `DuelingDeepQNetwork`):** PyTorch modules. They receive `nn_conf_func` (the factory from `dqn_config.py`) and call it to get `self.net` (the body). Then they bolt on their own output heads:
+- `DeepQNetwork`: Adds `fc_out` → Q(s,a) linear.
+- `DuelingDeepQNetwork`: Adds `fc_val` → V(s) and `fc_adv` → A(s,a), aggregates to Q.
+
+- **`dqn/agent.py`:** The learning logic. Class hierarchy:
+- `Agent` (abstract): Replay buffer management, epsilon-greedy, soft/hard target update, tensorboard logging, save/load.
+- `SimpleAgent.learn()`: Vanilla DQN Bellman target.
+- `DoubleAgent.learn()`: Double DQN — online network selects action, target network evaluates it.
+- `PerDoubleAgent.learn()`: Adds importance-sampling weights from `ReplayMemoryPrioritized`.
+- Concrete classes (`DuelingDoubleDQNAgent`, etc.) only add `__init__` that instantiates the right network + replay memory.
+
+---
+
+### What `train.py` Does
+
+```text
+train.py  →  CustomEnvWrapper(DqnEnv("train"))
+                                     ↓
+                 make_env(env, max_episode_steps=1000)  →  DummyVecEnv
+                                     ↓
+         DuelingDoubleDQNAgent(nn_conf_func=network_config, ...)
+                                     ↓
+         init_replay_memory_buffer()   ← 100K random steps first
+         train_loop()                  ← ε-greedy → step → store → learn → soft update
+
+```
+
+---
+
+### Where to Make Changes
+
+| Goal                            | File(s) to Edit                                                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Change reward weights**       | `env/custom_env/rl_controller.py:494` (`_calculate_reward`)                                                                |
+| **Add/remove state features**   | `_get_current_observation()` in `rl_controller.py` + `MACRO_STATE_SIZE` + `observation_space_n`                            |
+| **Change action space**         | `green_time_actions_sec` in `RLController.__init__`, and `action_space_n`                                                  |
+| **Change network architecture** | `env/dqn_config.py:161` (`network_config`)                                                                                 |
+| **Change hyperparameters**      | `env/dqn_config.py:29` (`HYPER_PARAMS`)                                                                                    |
+| **Change demand distributions** | `env/custom_env/utils.py:33` (`SUMO_PARAMS`)                                                                               |
+| **Switch algorithm**            | `HYPER_PARAMS["algo"]` in `dqn_config.py`                                                                                  |
+| **Swap to a different variant** | Copy the variant's `rl_controller.py` + `dqn_config.py` from its subdirectory to `env/custom_env/` and `env/` respectively |
+
+---
+
+### One Non-Obvious Coupling
+
+> **Important:** `DqnEnv.step()` calls `sumo_env.step(action)` but discards the return value `(obs, rew, done, info)`. The framework then calls `sumo_env.obs()`, `sumo_env.rew()`, `sumo_env.done()` separately via `CustomEnvWrapper._obs()/_rew()/_done()`. This means the observation and reward are computed twice per step — this is the "Double observation computation" bug in `CLAUDE.md`. If you add expensive computation to `step()`, cache it; don't recompute in `obs()`/`rew()`.
+
+[Introduction to Gym and Stable Baselines for Reinforcement Learning](https://www.youtube.com/watch?v=lZ-F9C6cGIA)
+This video provides an excellent visual introduction to using the Gym interface alongside Stable Baselines, which covers many of the core concepts in your codebase.

@@ -39,7 +39,15 @@ SUMO_PARAMS = {
     # "veh_per_hour_on_ramp_weights": [0.05, 0.05, 0.10, 0.15, 0.25, 0.25, 0.15], # Sums to 1.0
     # for testing purposes change to this:
     "veh_per_hour_main_weights": [0.05, 0.1, 0.15, 0.3, 0.25, 0.15],  # Sums to 1.0
-    "veh_per_hour_on_ramp_weights": [0.05, 0.05, 0.05, 0.15, 0.25, 0.3, 0.15],  # Sums to 1.0
+    "veh_per_hour_on_ramp_weights": [
+        0.05,
+        0.05,
+        0.05,
+        0.15,
+        0.25,
+        0.3,
+        0.15,
+    ],  # Sums to 1.0
     "veh_per_hour_off_ramp_weights": [0.4, 0.4, 0.2],  # Sums to 1.0
     # "con_penetration_rate_range": [0.99, 0.999],  ## for test
     "con_penetration_rate_range": [0.01, 0.99],  ## updated
@@ -58,4 +66,5 @@ SUMO_PARAMS = {
     "vector_len": 14,
     "observation_shape_macro": (14,),
     "observation_shape_micro": (2, 27, 5),  # Channels-first for PyTorch
+    "lcc_compliance_rate": 1.0,  # fraction of CAVs that obey LCC commands (1.0 = all)
 }

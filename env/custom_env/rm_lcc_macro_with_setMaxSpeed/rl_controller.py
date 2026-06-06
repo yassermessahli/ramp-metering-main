@@ -1,16 +1,7 @@
 import numpy as np
+import traci
 
 from ..sumo_env import SumoEnv
-
-try:
-    import traci  # noqa
-except ImportError:
-    import os
-    import sys
-
-    if "SUMO_HOME" in os.environ:
-        sys.path.append(os.path.join(os.environ["SUMO_HOME"], "tools"))
-    import traci  # noqa
 
 
 class RLController(SumoEnv):
@@ -29,7 +20,7 @@ class RLController(SumoEnv):
     """
 
     TARGET_VSL_LANE_ID = "vsl_zone_0"
-    LANE_CLOSED_SPEED_MPS = 5.0
+    LANE_CLOSED_SPEED_MPS = 0.0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

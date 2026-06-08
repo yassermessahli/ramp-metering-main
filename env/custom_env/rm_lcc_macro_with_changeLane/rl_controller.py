@@ -15,22 +15,19 @@ class RLController(SumoEnv):
         lane_idx  = action // 8  -> 0 = lane open, 1 = lane closed
 
     Lane closure is implemented via explicit per-vehicle changeLane commands
-    issued to all CAV vehicles within LCC_WARNING_DIST_M metres of the end of
-    main_road_0. A setDisallow call on vsl_zone_0 acts as a safety net for
-    any vehicles that slip through the warning zone.
+    issued to CAV vehicles detected in vsl_zone_0 (the 62m segment immediately
+    before the merge zone). Any vehicle that slips through into acceleration_area_1
+    receives a follow-up command there. This keeps the effect spatially localized
+    to the merge zone — no upstream cascade on main_road.
 
     Compliance rate is configurable via SUMO_PARAMS["lcc_compliance_rate"].
     """
 
-    # Controlled segment
-    CONTROLLED_LANE_ID = "vsl_zone_0"  # setDisallow target (safety net)
-    WARNING_LANE_ID = "main_road_0"  # lane where changeLane commands are issued
-    WARNING_LANE_LEN_M = 426.24  # length of main_road_0 (from net.xml)
+    # Primary interception zone: 62m segment right before the merge
+    CONTROLLED_LANE_ID = "vsl_zone_0"
+    # Fallback: catch vehicles that entered the merge lane before being commanded
+    ACCEL_MERGE_LANE_ID = "acceleration_area_1"
 
-    # LCC command parameters
-    LCC_WARNING_DIST_M = (
-        350.0  # distance upstream of lane end to start issuing commands
-    )
     LCC_CHANGE_DURATION_SEC = 30.0  # changeLane persistence duration (seconds)
 
     def __init__(self, *args, **kwargs):
@@ -149,37 +146,31 @@ class RLController(SumoEnv):
         self.current_ramp_queue_veh = 0
 
     def _enforce_lcc(self):
-        """Issue changeLane commands to CAVs in the warning zone.
+        """Issue changeLane commands to CAVs in or entering the merge zone.
 
-        Called every simulation step while the lane closure action is active.
-        Targets vehicles on WARNING_LANE_ID within LCC_WARNING_DIST_M of the
-        lane end, and any that have already entered CONTROLLED_LANE_ID.
+        Targets vehicles detected in vsl_zone_0 (primary: 62m before merge) and
+        acceleration_area_1 (fallback: the merge lane itself). No upstream segments
+        are touched, so the effect is spatially bounded to the merge zone.
         """
         all_veh_data = traci.vehicle.getSubscriptionResults(None)
         if not all_veh_data:
             return
 
         v_type_con = self.args.get("v_type_con", "con")
-        warning_start = self.WARNING_LANE_LEN_M - self.LCC_WARNING_DIST_M
 
         for veh_id, data in all_veh_data.items():
             if data.get(tc.VAR_TYPE) != v_type_con:
                 continue
-            if random.random() >= self.LCC_COMPLIANCE_RATE:
-                continue
 
             raw_lane = data.get(tc.VAR_LANE_ID, "")
             lane_id = self.internal_to_destination_map.get(raw_lane, raw_lane)
-            lane_pos = data.get(tc.VAR_LANEPOSITION, 0)
 
-            if lane_id == self.WARNING_LANE_ID and lane_pos >= warning_start:
-                # Skip if already executing a lane change to the right
-                if traci.vehicle.getLaneChangeState(veh_id, -1)[0] == 0:
+            if lane_id == self.CONTROLLED_LANE_ID:
+                if random.random() < self.LCC_COMPLIANCE_RATE:
                     traci.vehicle.changeLane(veh_id, 1, self.LCC_CHANGE_DURATION_SEC)
-            elif lane_id == self.CONTROLLED_LANE_ID:
-                # Already in the zone: push to vsl_zone_1
-                if traci.vehicle.getLaneChangeState(veh_id, -1)[0] == 0:
-                    traci.vehicle.changeLane(veh_id, 1, self.LCC_CHANGE_DURATION_SEC)
+            elif lane_id == self.ACCEL_MERGE_LANE_ID:
+                if random.random() < self.LCC_COMPLIANCE_RATE:
+                    traci.vehicle.changeLane(veh_id, 2, self.LCC_CHANGE_DURATION_SEC)
 
     def _update_lane_indicator(self, lane_idx):
         """Create or update a POI flag at the start of vsl_zone_0 showing lane state.
@@ -227,18 +218,22 @@ class RLController(SumoEnv):
             self.outflow_detector_ids_reward
         )
 
-        self.processed_speed_upstream_mps = self.get_loops_flow_weigthed_mean_speed(
+        # Interval-based (detector 40s period) → step-length invariant, unlike the
+        # last-step snapshot, which collapses to 0 at small step-length.
+        self.processed_speed_upstream_mps = self.get_loops_mean_speed_interval(
             self.upstream_detector_ids_state
         )
-        self.processed_speed_bottleneck_mps = self.get_loops_flow_weigthed_mean_speed(
+        self.processed_speed_bottleneck_mps = self.get_loops_mean_speed_interval(
             self.bottleneck_detector_ids_state
         )
         self.processed_mainline_speed_downstream_mps = (
-            self.get_loops_flow_weigthed_mean_speed(self.outflow_detector_ids_reward)
+            self.get_loops_mean_speed_interval(self.outflow_detector_ids_reward)
         )
 
+        # sum_queue accumulates one instantaneous count per sim-step; multiply by
+        # sim_step_length so the cycle average is step-length invariant (identical at 1.0s).
         self.processed_ramp_queue_veh = (
-            self.sum_queue / self.CYCLE_DURATION_SEC
+            self.sum_queue * self.sim_step_length / self.CYCLE_DURATION_SEC
             if self.CYCLE_DURATION_SEC > 0
             else 0.0
         )
@@ -249,10 +244,8 @@ class RLController(SumoEnv):
         self.processed_occ_lane_0_bottleneck_percent = (
             self.get_loops_occupancy_interval([self.bottleneck_detector_ids_state[0]])
         )
-        self.processed_speed_lane_0_bottleneck_mps = (
-            self.get_loops_flow_weigthed_mean_speed(
-                [self.bottleneck_detector_ids_state[0]]
-            )
+        self.processed_speed_lane_0_bottleneck_mps = self.get_loops_mean_speed_interval(
+            [self.bottleneck_detector_ids_state[0]]
         )
 
         self.processed_flow_lane_0_upstream_vph = self.get_loops_flow_interval(
@@ -261,10 +254,8 @@ class RLController(SumoEnv):
         self.processed_occ_lane_0_upstream_percent = self.get_loops_occupancy_interval(
             [self.upstream_detector_ids_state[1]]
         )
-        self.processed_speed_lane_0_upstream_mps = (
-            self.get_loops_flow_weigthed_mean_speed(
-                [self.upstream_detector_ids_state[1]]
-            )
+        self.processed_speed_lane_0_upstream_mps = self.get_loops_mean_speed_interval(
+            [self.upstream_detector_ids_state[1]]
         )
 
     def reset(self):
@@ -329,7 +320,8 @@ class RLController(SumoEnv):
 
         green_idx = int(action_index) % len(self.green_time_actions_sec)
         lane_idx = int(action_index) // len(self.green_time_actions_sec)
-        lane_idx = 1  # for debug only
+        # lane_idx = 1  # for debug only
+
         chosen_green_time_sec = self.green_time_actions_sec[green_idx]
         self.last_action_value_sec = chosen_green_time_sec
         self.last_lane_action = lane_idx

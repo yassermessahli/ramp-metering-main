@@ -184,18 +184,18 @@ class RLController(SumoEnv):
             self.outflow_detector_ids_reward
         )
 
-        self.processed_speed_upstream_mps = self.get_loops_flow_weigthed_mean_speed(
+        self.processed_speed_upstream_mps = self.get_loops_mean_speed_interval(
             self.upstream_detector_ids_state
         )
-        self.processed_speed_bottleneck_mps = self.get_loops_flow_weigthed_mean_speed(
+        self.processed_speed_bottleneck_mps = self.get_loops_mean_speed_interval(
             self.bottleneck_detector_ids_state
         )
         self.processed_mainline_speed_downstream_mps = (
-            self.get_loops_flow_weigthed_mean_speed(self.outflow_detector_ids_reward)
+            self.get_loops_mean_speed_interval(self.outflow_detector_ids_reward)
         )
 
         self.processed_ramp_queue_veh = (
-            self.sum_queue / self.CYCLE_DURATION_SEC
+            self.sum_queue * self.sim_step_length / self.CYCLE_DURATION_SEC
             if self.CYCLE_DURATION_SEC > 0
             else 0.0
         )
@@ -207,7 +207,7 @@ class RLController(SumoEnv):
             self.get_loops_occupancy_interval([self.bottleneck_detector_ids_state[0]])
         )
         self.processed_speed_lane_0_bottleneck_mps = (
-            self.get_loops_flow_weigthed_mean_speed(
+            self.get_loops_mean_speed_interval(
                 [self.bottleneck_detector_ids_state[0]]
             )
         )
@@ -219,7 +219,7 @@ class RLController(SumoEnv):
             [self.upstream_detector_ids_state[1]]
         )
         self.processed_speed_lane_0_upstream_mps = (
-            self.get_loops_flow_weigthed_mean_speed(
+            self.get_loops_mean_speed_interval(
                 [self.upstream_detector_ids_state[1]]
             )
         )

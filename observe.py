@@ -31,7 +31,7 @@ class Observe(View):
             type(self).__name__.upper(),
             make_env(
                 env=CustomEnvWrapper(
-                    CustomEnv(type(self).__name__.lower(), gui_override=gui_override)
+                    CustomEnv("observe", gui_override=gui_override)
                 ),
                 max_episode_steps=args.max_s,
             ),

@@ -135,6 +135,12 @@ class SumoEnv:
         elif self.seed:
             params += ["--seed", str(self.args.get("seed_value", 42))]
 
+        # Per-run step-length override (e.g. smooth GUI inspection). Command line wins
+        # over the sumocfg; no-op when unset, so training is unaffected.
+        sumo_step_length = os.environ.get("SUMO_STEP_LENGTH")
+        if sumo_step_length:
+            params += ["--step-length", str(sumo_step_length)]
+
         if sumo_log_file:
             params += ["--log", sumo_log_file]
 

@@ -362,7 +362,7 @@ class RLController(SumoEnv):
 
         green_idx = int(action_index) % len(self.green_time_actions_sec)
         lane_idx = int(action_index) // len(self.green_time_actions_sec)
-        lane_idx = 
+        lane_idx = 1
         chosen_green_time_sec = self.green_time_actions_sec[green_idx]
         red_time_sec = self.CYCLE_DURATION_SEC - chosen_green_time_sec
         self.last_action_value_sec = chosen_green_time_sec

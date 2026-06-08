@@ -1,10 +1,9 @@
 import argparse
 import itertools
 import os
-import time
-from datetime import timedelta
 
 from colorama import Fore
+from tqdm import tqdm
 
 from dqn import Agents, CustomEnvWrapper, make_env
 from env import HYPER_PARAMS, CustomEnv, network_config
@@ -69,85 +68,71 @@ class Train:
         print()
         print("Initialize Replay Memory Buffer")
 
-        # Initial reset of environment
+        total_init = self.agent.min_buffer_size // self.agent.n_env
         obses = self.env.reset()
-        for t in range(self.agent.min_buffer_size // self.agent.n_env):
-            if (
-                t
-                >= (self.agent.min_buffer_size // self.agent.n_env)
-                - self.agent.resume_step
-            ):
-                # Select actions using current policy
-                actions = self.agent.choose_actions(obses)
-            else:
-                # Random sampling for buffer initialization
-                actions = [
-                    self.env.action_space.sample() for _ in range(self.agent.n_env)
-                ]
+        with tqdm(
+            total=self.agent.min_buffer_size,
+            initial=self.agent.resume_step * self.agent.n_env,
+            desc="Fill Buffer",
+            unit="step",
+            dynamic_ncols=True,
+            colour="yellow",
+        ) as pbar:
+            for t in range(total_init):
+                if t >= total_init - self.agent.resume_step:
+                    actions = self.agent.choose_actions(obses)
+                else:
+                    actions = [
+                        self.env.action_space.sample() for _ in range(self.agent.n_env)
+                    ]
 
-            # Execute actions in environment
-            new_obses, rews, dones, _ = self.env.step(actions)
-            # Store experience tuple in replay memory
-            self.agent.store_transitions(obses, actions, rews, dones, new_obses, None)
-
-            obses = new_obses
-
-            if (t + 1) % (10000 // self.agent.n_env) == 0:
-                print(
-                    str((t + 1) * self.agent.n_env)
-                    + " / "
-                    + str(self.agent.min_buffer_size)
-                )
-                print(
-                    Fore.LIGHTRED_EX,
-                    "---",
-                    str(
-                        timedelta(
-                            seconds=round((time.time() - self.agent.start_time), 0)
-                        )
-                    ),
-                    "---",
-                    Fore.RESET,
-                )
+                new_obses, rews, dones, _ = self.env.step(actions)
+                self.agent.store_transitions(obses, actions, rews, dones, new_obses, None)
+                obses = new_obses
+                pbar.update(self.agent.n_env)
 
     def train_loop(self):
         """Executes main training loop."""
         print()
         print("Start Training")
 
+        total_train = int(self.max_total_steps) if bool(self.max_total_steps) else None
         obses = self.env.reset()
-        for step in itertools.count(start=self.agent.resume_step):
-            self.agent.step = step
+        with tqdm(
+            total=total_train,
+            initial=self.agent.resume_step * self.agent.n_env,
+            desc="Training",
+            unit="step",
+            dynamic_ncols=True,
+            colour="green",
+        ) as pbar:
+            for step in itertools.count(start=self.agent.resume_step):
+                self.agent.step = step
 
-            # Select actions using epsilon-greedy policy
-            actions = self.agent.choose_actions(obses)
+                actions = self.agent.choose_actions(obses)
+                new_obses, rews, dones, infos = self.env.step(actions)
+                self.agent.store_transitions(obses, actions, rews, dones, new_obses, infos)
+                obses = new_obses
 
-            # Stepping the environment
-            new_obses, rews, dones, infos = self.env.step(actions)
+                self.agent.learn()
+                self.agent.update_target_network()
+                self.agent.log()
+                self.agent.save_model()
 
-            # Store experience into replay memory
-            self.agent.store_transitions(obses, actions, rews, dones, new_obses, infos)
+                pbar.update(self.agent.n_env)
+                if step % 100 == 0:
+                    pbar.set_postfix(
+                        eps=f"{self.agent.epsilon():.3f}",
+                        ep=self.agent.episode_count,
+                        rew=f"{self.agent.info_mean('r'):.1f}" if self.agent.ep_info_buffer else "n/a",
+                    )
 
-            obses = new_obses
-
-            # Optimize policy network
-            self.agent.learn()
-
-            # Update target network
-            self.agent.update_target_network()
-
-            # Logging metrics
-            self.agent.log()
-
-            # Checkpointing model
-            self.agent.save_model()
-
-            if (
-                bool(self.max_total_steps)
-                and (step * self.agent.n_env) >= self.max_total_steps
-            ):
-                self.agent.save_model(force=True)
-                return
+                if (
+                    bool(self.max_total_steps)
+                    and (step * self.agent.n_env) >= self.max_total_steps
+                ):
+                    self.agent.save_model(force=True)
+                    return
 
     def run(self):
         """Starts the training process."""

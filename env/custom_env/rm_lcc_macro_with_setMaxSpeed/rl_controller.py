@@ -20,7 +20,7 @@ class RLController(SumoEnv):
     """
 
     TARGET_VSL_LANE_ID = "vsl_zone_0"
-    LANE_CLOSED_SPEED_MPS = 0.0
+    LANE_CLOSED_SPEED_MPS = 5.0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -298,20 +298,21 @@ class RLController(SumoEnv):
         self.last_action_value_sec = chosen_green_time_sec
         self.last_lane_action = lane_idx
 
-        # Apply lane VSL for the upcoming 40s cycle (covers green + red sub-phases).
-        self._apply_lane_vsl(lane_idx)
-
         red_time_sec = self.CYCLE_DURATION_SEC - chosen_green_time_sec
         if red_time_sec < 0:
             red_time_sec = 0.0
 
         self._reset_cycle_aggregators()
 
+        # Apply the green phase first. The lane VSL is only active during this
+        # sub-phase so that ramp vehicles released by the green light get a
+        # clear merge corridor; the lane reopens for the red sub-phase below.
         if (
             self.ramp_meter_id
             and self.green_phase_index != -1
             and chosen_green_time_sec > 0
         ):
+            self._apply_lane_vsl(lane_idx)
             self.set_phase(self.ramp_meter_id, self.green_phase_index)
             self.set_phase_duration(self.ramp_meter_id, chosen_green_time_sec)
             if self.sim_step_length > 0:
@@ -329,6 +330,11 @@ class RLController(SumoEnv):
                     self.ON_RAMP_EDGE
                 )
 
+        # Reopen the controlled lane before running the red sub-phase, so that
+        # mainline traffic flows freely while no ramp vehicles are released.
+        self._apply_lane_vsl(0)
+
+        # Apply the red phase next
         if self.ramp_meter_id and self.red_phase_index != -1 and red_time_sec > 0:
             self.set_phase(self.ramp_meter_id, self.red_phase_index)
             self.set_phase_duration(self.ramp_meter_id, red_time_sec)

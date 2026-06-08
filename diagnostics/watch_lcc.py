@@ -5,7 +5,7 @@ SUMO GUI with no trained model. A trivial constant policy feeds a hardcoded acti
 cycle — default action 8 = 5s green, lane_idx=1 (lane closed) — so you can watch whether
 mainline vehicles divert out of the controlled lane before the merge.
 
-Smooth motion comes from <step-length value="0.1"/> in the sumocfg (revert before training).
+Smooth motion comes from <step-length value="0.1"/> in the sumocfg (revert it before training).
 
 Run:
     uv run python diagnostics/watch_lcc.py -action 8 -seed 42

@@ -17,6 +17,10 @@
         <!-- Let the script control teleport time via command line args -->
         <time-to-teleport value="-1"/>
         <waiting-time-memory value="-1"/> <!-- Let script control this -->
+        <!-- 0.1 = smooth GUI motion for visualization (diagnostics/watch_lcc.py).
+             REVERT to 1.0 (or delete) before training/evaluation — at 0.1 the sim
+             runs 10x more steps and is much slower. -->
+        <step-length value="1.0"/>
     </processing>
 
     <routing>

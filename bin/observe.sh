@@ -2,10 +2,8 @@
 
 function run () {
 
-SAVE="1ramp_1x3"
-
-uv run observe.py -d save/$SAVE/DuelingDoubleDQNAgent_lr0.0001_model.pack -max_e 1 -log True -log_s 1
-
+MODEL_PATH="save/1ramp_1x3/lane_control_macro_only/DuelingDoubleDQNAgent_lr0.0001_model.pack"
+uv run observe.py -d $MODEL_PATH -max_e 1 -log True -log_s 1
 }
 
 # cd ..

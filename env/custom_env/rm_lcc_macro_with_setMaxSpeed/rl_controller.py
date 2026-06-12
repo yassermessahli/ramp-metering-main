@@ -63,8 +63,11 @@ class RLController(SumoEnv):
         self.outflow_detector_ids_reward = self.downstream_mainline_all_detector_ids
         self.ramp_queue_detector_id = "queue_sens"
 
-        # Macro-only state: 15 features (14 macro + last_lane_action). No micro grid.
-        self.observation_space_n = 15
+        # Macro-only state: 9 features (7 aggregate macro + last_green_time + last_lane_action).
+        # Per-lane (lane-0) features were removed because closing the VSL lane
+        # corrupts those readings (forced low flow / low speed) and biased the
+        # previous policy toward over-long red phases.
+        self.observation_space_n = 9
 
         self.last_action_value_sec = self.green_time_actions_sec[0]
         self.last_lane_action = 0  # 0=open, 1=closed
@@ -206,10 +209,8 @@ class RLController(SumoEnv):
         self.processed_occ_lane_0_bottleneck_percent = (
             self.get_loops_occupancy_interval([self.bottleneck_detector_ids_state[0]])
         )
-        self.processed_speed_lane_0_bottleneck_mps = (
-            self.get_loops_mean_speed_interval(
-                [self.bottleneck_detector_ids_state[0]]
-            )
+        self.processed_speed_lane_0_bottleneck_mps = self.get_loops_mean_speed_interval(
+            [self.bottleneck_detector_ids_state[0]]
         )
 
         self.processed_flow_lane_0_upstream_vph = self.get_loops_flow_interval(
@@ -218,10 +219,8 @@ class RLController(SumoEnv):
         self.processed_occ_lane_0_upstream_percent = self.get_loops_occupancy_interval(
             [self.upstream_detector_ids_state[1]]
         )
-        self.processed_speed_lane_0_upstream_mps = (
-            self.get_loops_mean_speed_interval(
-                [self.upstream_detector_ids_state[1]]
-            )
+        self.processed_speed_lane_0_upstream_mps = self.get_loops_mean_speed_interval(
+            [self.upstream_detector_ids_state[1]]
         )
 
     def reset(self):
@@ -426,42 +425,6 @@ class RLController(SumoEnv):
             0,
             1,
         )
-        norm_flow_lane_0_bottleneck = np.clip(
-            self.processed_flow_lane_0_merging_vph
-            / (self.MAX_LANE_FLOW_VPH if self.MAX_LANE_FLOW_VPH > 0 else 1.0),
-            0,
-            1,
-        )
-        norm_flow_lane_0_upstream = np.clip(
-            self.processed_flow_lane_0_upstream_vph
-            / (self.MAX_LANE_FLOW_VPH if self.MAX_LANE_FLOW_VPH > 0 else 1.0),
-            0,
-            1,
-        )
-        norm_occ_lane_0_bottleneck = np.clip(
-            self.processed_occ_lane_0_bottleneck_percent
-            / (self.MAX_OCCUPANCY_PERCENT if self.MAX_OCCUPANCY_PERCENT > 0 else 0.0),
-            0,
-            1,
-        )
-        norm_speed_lane_0_bottleneck = np.clip(
-            self.processed_speed_lane_0_bottleneck_mps
-            / (self.FREEFLOW_SPEED_MPS if self.FREEFLOW_SPEED_MPS > 0 else 1.0),
-            0,
-            1,
-        )
-        norm_occ_lane_0_upstream = np.clip(
-            self.processed_occ_lane_0_upstream_percent
-            / (self.MAX_OCCUPANCY_PERCENT if self.MAX_OCCUPANCY_PERCENT > 0 else 0.0),
-            0,
-            1,
-        )
-        norm_speed_lane_0_upstream = np.clip(
-            self.processed_speed_lane_0_upstream_mps
-            / (self.FREEFLOW_SPEED_MPS if self.FREEFLOW_SPEED_MPS > 0 else 1.0),
-            0,
-            1,
-        )
         norm_last_action = np.clip(
             self.last_action_value_sec
             / (self.CYCLE_DURATION_SEC if self.CYCLE_DURATION_SEC > 0 else 1.0),
@@ -471,6 +434,7 @@ class RLController(SumoEnv):
 
         state = np.array(
             [
+                # loop detector features (normalized flow, occupancy, speed)
                 norm_flow_upstream,
                 norm_flow_merging,
                 norm_occ_upstream,
@@ -478,12 +442,7 @@ class RLController(SumoEnv):
                 norm_occ_bottleneck,
                 norm_speed_bottleneck,
                 norm_ramp_queue,
-                norm_flow_lane_0_bottleneck,
-                norm_flow_lane_0_upstream,
-                norm_occ_lane_0_bottleneck,
-                norm_speed_lane_0_bottleneck,
-                norm_occ_lane_0_upstream,
-                norm_speed_lane_0_upstream,
+                # last joint actions (normalized green time, lane state)
                 norm_last_action,
                 float(self.last_lane_action),
             ],
@@ -569,24 +528,29 @@ class RLController(SumoEnv):
         return 0.0
 
     def _calculate_reward(self):
+
+        # weights
         w_speed_merge = 1.5
         w_speed_up = 1.0
         w_speed_down = 0.5
 
         w_occ_bottle = 2.0
         w_occ_upstream = 1.0
-        w_queue = 1.0
+        w_queue = 5.0
         w_spillback = 20.0
 
+        # reward components
         r_speed_merge = self._reward_merging_speed()
         r_speed_up = self._reward_upstream_speed()
         r_speed_down = self._reward_outflow_speed()
 
+        # penalty components
         p_occ_bottle = self._penalty_bottleneck_occ()
         p_occ_upstream = self._penalty_upstream_occ()
         p_queue = self._penalty_ramp_queue()
         p_spillback = self._penalty_spillback()
 
+        # final reward value calculation
         reward = (
             (w_speed_merge * r_speed_merge)
             + (w_speed_up * r_speed_up)

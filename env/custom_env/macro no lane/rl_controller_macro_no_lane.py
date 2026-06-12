@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .sumo_env import SumoEnv
+from ..sumo_env import SumoEnv
 
 # import traci # Not strictly needed here if all traci calls are via self.xxx methods from SumoEnv
 
@@ -17,7 +17,9 @@ class RLController(SumoEnv):
         # self.sim_step_length is inherited from SumoEnv, fetched after traci.start()
 
         # Action Space Definition
-        self.green_time_actions_sec = np.array([5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0])
+        self.green_time_actions_sec = np.array(
+            [5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0]
+        )
         self.action_space_n = len(self.green_time_actions_sec)
 
         # Ramp Meter Phase Indices (ensure these match your SUMO TL definition)
@@ -25,8 +27,12 @@ class RLController(SumoEnv):
         self.red_phase_index = 1
 
         # ---- Detector ID Initialization ----
-        self.upstream_mainline_all_detector_ids = self.get_edge_induction_loops(self.UPSTREAM_EDGE)
-        self.bottleneck_edge_all_detector_ids = self.get_edge_induction_loops(self.MERGING_EDGE)
+        self.upstream_mainline_all_detector_ids = self.get_edge_induction_loops(
+            self.UPSTREAM_EDGE
+        )
+        self.bottleneck_edge_all_detector_ids = self.get_edge_induction_loops(
+            self.MERGING_EDGE
+        )
         self.downstream_mainline_all_detector_ids = self.get_edge_induction_loops(
             self.DOWNSTREAM_EDGE
         )
@@ -156,12 +162,14 @@ class RLController(SumoEnv):
         self.processed_speed_bottleneck_mps = self.get_loops_flow_weigthed_mean_speed(
             self.bottleneck_detector_ids_state
         )
-        self.processed_mainline_speed_downstream_mps = self.get_loops_flow_weigthed_mean_speed(
-            self.outflow_detector_ids_reward
+        self.processed_mainline_speed_downstream_mps = (
+            self.get_loops_flow_weigthed_mean_speed(self.outflow_detector_ids_reward)
         )
 
         self.processed_ramp_queue_veh = (
-            self.sum_queue / self.CYCLE_DURATION_SEC if self.CYCLE_DURATION_SEC > 0 else 0.0
+            self.sum_queue / self.CYCLE_DURATION_SEC
+            if self.CYCLE_DURATION_SEC > 0
+            else 0.0
         )
 
     def reset(self):
@@ -240,19 +248,27 @@ class RLController(SumoEnv):
 
         self._reset_cycle_aggregators()
 
-        if self.ramp_meter_id and self.green_phase_index != -1 and chosen_green_time_sec > 0:
+        if (
+            self.ramp_meter_id
+            and self.green_phase_index != -1
+            and chosen_green_time_sec > 0
+        ):
             self.set_phase(self.ramp_meter_id, self.green_phase_index)
             self.set_phase_duration(self.ramp_meter_id, chosen_green_time_sec)
             num_steps_green = 0
             if self.sim_step_length > 0:  # pragma: no branch
-                num_steps_green = int(round(chosen_green_time_sec / self.sim_step_length))
+                num_steps_green = int(
+                    round(chosen_green_time_sec / self.sim_step_length)
+                )
             # else: num_steps_green = int(chosen_green_time_sec) # Fallback, though sim_step_length should be >0
 
             for _ in range(num_steps_green):
                 if self.is_simulation_end():
                     break
                 self.simulation_step()
-                self.sum_queue += self.get_edge_ls_queue_length_vehicles(self.ON_RAMP_EDGE)
+                self.sum_queue += self.get_edge_ls_queue_length_vehicles(
+                    self.ON_RAMP_EDGE
+                )
 
         if self.ramp_meter_id and self.red_phase_index != -1 and red_time_sec > 0:
             self.set_phase(self.ramp_meter_id, self.red_phase_index)
@@ -266,13 +282,17 @@ class RLController(SumoEnv):
                 if self.is_simulation_end():
                     break
                 self.simulation_step()
-                self.sum_queue += self.get_edge_ls_queue_length_vehicles(self.ON_RAMP_EDGE)
+                self.sum_queue += self.get_edge_ls_queue_length_vehicles(
+                    self.ON_RAMP_EDGE
+                )
 
         self._collect_data_at_cycle_end()
 
         new_observation = self._get_current_observation()
         reward = self._calculate_reward()
-        is_done = self.is_simulation_end() or self.get_current_time() >= self.args["steps"]
+        is_done = (
+            self.is_simulation_end() or self.get_current_time() >= self.args["steps"]
+        )
 
         current_phase_index = -1
         current_ryg_state = "N/A"
@@ -353,6 +373,7 @@ class RLController(SumoEnv):
 
         state = np.array(
             [
+                # loop detectors features (normalized flow, occupancy, speed)
                 norm_flow_upstream,
                 norm_flow_merging,
                 norm_occ_upstream,
@@ -360,6 +381,7 @@ class RLController(SumoEnv):
                 norm_occ_bottleneck,
                 norm_speed_bottleneck,
                 norm_ramp_queue,
+                # last action (normalized green time)
                 norm_last_action,
             ],
             dtype=np.float32,
@@ -460,7 +482,9 @@ class RLController(SumoEnv):
                 denominator = 1e-6  # Avoid division by zero
 
             # This calculates how "far into" the spillback zone we are, from 0.0 to 1.0
-            spill_amount = (self.processed_ramp_queue_veh - spillback_threshold_veh) / denominator
+            spill_amount = (
+                self.processed_ramp_queue_veh - spillback_threshold_veh
+            ) / denominator
 
             # The penalty scales from 0 to -1. The final weight is handled in _calculate_reward
             return -1.0 * np.clip(spill_amount, 0, 1)
@@ -476,7 +500,9 @@ class RLController(SumoEnv):
 
         # Penalties
         w_occ_bottle = 2.0  # Occupancy in the bottleneck is a key indicator of collapse
-        w_occ_upstream = 1.0  # Upstream occupancy is also important, but less than bottleneck
+        w_occ_upstream = (
+            1.0  # Upstream occupancy is also important, but less than bottleneck
+        )
         w_queue = 1.0
         w_spillback = 20.0  # A very large weight to make spillback catastrophic
 

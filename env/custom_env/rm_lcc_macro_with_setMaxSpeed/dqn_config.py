@@ -14,7 +14,7 @@ MAX_AGENT_STEPS_PER_EPISODE = int(
 
 # Variant tag is appended to save/log dirs so this experiment does not
 # collide with the prior variants' checkpoints/logs.
-VARIANT_TAG = "lane_control_macro_only"
+VARIANT_TAG = "rm_lcc_macro_with_setMaxSpeed"
 
 HYPER_PARAMS = {
     "gpu": "0",
